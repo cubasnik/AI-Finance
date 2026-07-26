@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Finance — Пользователи</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-dark: #0B1220; --navy: #16213E; --blue: #2D6CDF; --blue-light: #EAF1FE;
+    --bg-page: #F3F5F9; --card: #FFFFFF; --text: #12172A;
+    --text-soft: #626B85; --border: #E4E8F0;
+    --red: #D33F3F; --red-bg: #FCEAEA; --amber: #C98A1F; --amber-bg: #FBF1DF;
+    --green: #1F9254; --green-bg: #E7F5EC;
+  }
+  html[data-theme="dark"] {
+    --blue-light: #1E2A44; --bg-page: #10141F; --card: #1A2033;
+    --text: #E6E9F2; --text-soft: #9098AC; --border: #2C3348;
+    --red-bg: #3A1A1A; --amber-bg: #3A2E12; --green-bg: #163325;
+  }
+  html[data-theme="dark"] h1 { color: var(--text); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-page); font-family: 'Inter', sans-serif; color: var(--text); }
+  .topbar {
+    background: var(--navy-dark); background-image: linear-gradient(120deg, var(--navy-dark) 55%, var(--navy) 100%);
+    padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .brand { font-weight: 800; font-size: 18px; color: #fff; }
+  .brand span { color: var(--blue); }
+  .who { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.6); display: flex; gap: 14px; align-items: center; }
+  .who a { color: rgba(255,255,255,0.8); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.4); cursor: pointer; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 8px; box-shadow: 0 1px 2px rgba(16,24,64,0.04); }
+  h1 { font-size: 17px; margin: 20px 0 20px 20px; color: var(--navy); }
+
+  .person-row {
+    display: flex; align-items: center; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--border);
+  }
+  .person-row:last-child { border-bottom: none; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--blue-light); color: var(--blue);
+    display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0;
+  }
+  .person-info { flex: 1; min-width: 0; }
+  .person-name { font-weight: 600; font-size: 14.5px; }
+  .person-meta { font-size: 12.5px; color: var(--text-soft); margin-top: 2px; }
+  .role-tag {
+    display: inline-block; margin-top: 6px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 20px; white-space: nowrap;
+  }
+  .role-tag.role-owner { background: var(--red-bg); color: var(--red); }
+  .role-tag.role-accountant { background: var(--amber-bg); color: var(--amber); }
+  .role-tag.role-user { background: var(--green-bg); color: var(--green); }
+  .empty-state { font-size: 13px; color: var(--text-soft); padding: 30px; text-align: center; }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand" onclick="goHome()" style="cursor:pointer;">AI <span>Finance</span></div>
+    <div class="who">
+      <span id="whoami"></span> ·
+      <a onclick="toggleTheme()" id="themeToggleBtn" style="cursor:pointer;">🌙</a> ·
+      <a onclick="location.href='/profile.html'">Мой профиль</a> ·
+      <a onclick="location.href='/chat.html'">Чат<span id="chatUnreadBadge" style="display:none; background:var(--red,#D33F3F); color:#fff; border-radius:20px; padding:1px 6px; font-size:10px; margin-left:4px;"></span></a> ·
+      <a id="dashLink" style="display:none;" onclick="location.href='/dashboard.html'">К дашборду</a>
+      <a id="entryLink" style="display:none;" onclick="location.href='/entry.html'">Внести запись</a> ·
+      <a onclick="logout()">Выйти</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <h1>Пользователи</h1>
+    <div class="card">
+      <div id="usersList"></div>
+    </div>
+  </div>
+
+<script>
+  async function goHome() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    window.location.href = '/dashboard.html';
+  }
+
+  let meId = null;
+
+  async function checkAuth() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    if (data.mustChangePassword) { window.location.href = '/profile.html?expired=1'; return; }
+    meId = data.user.id;
+    document.getElementById('whoami').textContent = data.user.username;
+    document.getElementById('dashLink').style.display = '';
+    document.getElementById('entryLink').style.display = '';
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+
+  function initials(name) {
+    if (!name) return '?';
+    const parts = name.trim().split(/\s+/);
+    return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
+  }
+
+  const ROLE_LABELS = { owner: 'Владелец', accountant: 'Главный Бухгалтер', user: 'Обычный пользователь' };
+
+  async function loadUsers() {
+    const res = await fetch('/api/users');
+    const users = await res.json();
+    const el = document.getElementById('usersList');
+    if (!users.length) { el.innerHTML = '<div class="empty-state">Пользователей пока нет</div>'; return; }
+
+    el.innerHTML = users.map(u => {
+      const displayName = u.full_name || u.username;
+      const contacts = [u.email, u.phone].filter(Boolean).join(' · ');
+      const isMe = String(u.id) === String(meId);
+      const tgLink = u.telegram_username ? `<a href="https://t.me/${u.telegram_username.replace('@','')}" target="_blank" style="color:var(--blue);">${u.telegram_username}</a>` : '';
+      return `
+        <div class="person-row">
+          <div class="avatar">${initials(displayName)}</div>
+          <div class="person-info">
+            <div class="person-name">${displayName}${isMe ? ' (вы)' : ''}${u.position ? ` <span style="font-weight:400; color:var(--text-soft); font-size:12px;">· ${u.position}</span>` : ''}</div>
+            <div class="person-meta">@${u.username}${contacts ? ' · ' + contacts : ''}${tgLink ? ' · ' + tgLink : ''}</div>
+            <div><span class="role-tag role-${u.role}">${ROLE_LABELS[u.role] || u.role}</span></div>
+          </div>
+          ${!isMe ? `<a onclick="location.href='/chat.html?with=${u.id}'" style="margin-left:12px; font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); flex-shrink:0;">Написать</a>` : ''}
+        </div>
+      `;
+    }).join('');
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  }
+  applyTheme(localStorage.getItem('theme') || 'light');
+
+  const baseDocTitle = document.title;
+  let lastKnownUnread = null;
+
+  function playNotificationSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  }
+
+  async function pollChatUnread() {
+    try {
+      const res = await fetch('/api/chat/unread-count');
+      if (!res.ok) return;
+      const data = await res.json();
+      const badge = document.getElementById('chatUnreadBadge');
+      const label = data.unread > 99 ? '99+' : data.unread;
+      if (badge) {
+        badge.style.display = data.unread > 0 ? '' : 'none';
+        badge.textContent = label;
+      }
+      document.title = data.unread > 0 ? `(${label}) ${baseDocTitle}` : baseDocTitle;
+
+      if (lastKnownUnread !== null && data.unread > lastKnownUnread) {
+        playNotificationSound();
+      }
+      lastKnownUnread = data.unread;
+    } catch (e) {}
+  }
+  setInterval(pollChatUnread, 8000);
+  pollChatUnread();
+
+  (async () => {
+    await checkAuth();
+    loadUsers();
+  })();
+</script>
+</body>
+</html>

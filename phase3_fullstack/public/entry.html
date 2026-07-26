@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Finance — Внести запись</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --navy-dark: #0B1220; --navy: #16213E; --blue: #2D6CDF; --blue-light: #EAF1FE;
+    --bg-page: #F3F5F9; --card: #FFFFFF; --text: #12172A;
+    --text-soft: #626B85; --border: #E4E8F0; --green: #1F9254; --green-bg:#E7F5EC; --red: #D33F3F;
+  }
+  html[data-theme="dark"] {
+    --blue-light: #1E2A44; --bg-page: #10141F; --card: #1A2033;
+    --text: #E6E9F2; --text-soft: #9098AC; --border: #2C3348; --green-bg: #163325;
+  }
+  html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea {
+    background: #232A3D; color: var(--text); border-color: var(--border);
+  }
+  html[data-theme="dark"] table tr:hover { background: #202737; }
+  html[data-theme="dark"] h1 { color: var(--text); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-page); font-family: 'Inter', sans-serif; color: var(--text); }
+  .topbar {
+    background: var(--navy-dark); background-image: linear-gradient(120deg, var(--navy-dark) 55%, var(--navy) 100%);
+    padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .brand { font-weight: 800; font-size: 18px; color: #fff; }
+  .brand span { color: var(--blue); }
+  .who { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.6); display: flex; gap: 14px; align-items: center; }
+  .who a { color: rgba(255,255,255,0.8); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.4); cursor: pointer; }
+
+  .wrap { max-width: 560px; margin: 0 auto; padding: 32px 20px 60px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px 26px; box-shadow: 0 1px 2px rgba(16,24,64,0.04); }
+  h1 { font-size: 18px; margin: 0 0 22px; color: var(--navy); }
+  label { display: block; font-size: 12.5px; color: var(--text-soft); font-weight: 600; margin-bottom: 6px; margin-top: 16px; }
+  label:first-of-type { margin-top: 0; }
+  input, select, textarea {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: 'Inter', sans-serif;
+  }
+  textarea { resize: vertical; min-height: 60px; }
+  button {
+    margin-top: 24px; width: 100%; padding: 13px; border: none; border-radius: 8px;
+    background: var(--blue); color: #fff; font-weight: 700; font-size: 14.5px; cursor: pointer;
+  }
+  .msg { margin-top: 14px; font-size: 13.5px; text-align: center; min-height: 18px; }
+  .msg.ok { color: var(--green); }
+  .msg.err { color: var(--red); }
+
+  .recent { margin-top: 28px; }
+  .recent h2 { font-size: 14px; color: var(--text-soft); font-weight: 600; margin-bottom: 10px; }
+  .recent-item {
+    display: flex; justify-content: space-between; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13.5px;
+  }
+  .recent-item .cat { font-weight: 600; }
+  .recent-item .amt { font-family: 'IBM Plex Mono', monospace; color: var(--text-soft); }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand" onclick="goHome()" style="cursor:pointer;">AI <span>Finance</span></div>
+    <div class="who"><span id="whoami"></span> · <a onclick="toggleTheme()" id="themeToggleBtn" style="cursor:pointer;">🌙</a> · <a onclick="location.href='/profile.html'">Профиль</a> · <a onclick="location.href='/colleagues.html'">Пользователи</a> · <a onclick="location.href='/chat.html'">Чат<span id="chatUnreadBadge" style="display:none; background:var(--red,#D33F3F); color:#fff; border-radius:20px; padding:1px 6px; font-size:10px; margin-left:4px;"></span></a> · <a id="dashLink" style="display:none;" onclick="location.href='/dashboard.html'">К дашборду</a> · <a onclick="logout()">Выйти</a></div>
+  </div>
+
+  <div class="wrap">
+    <div class="card">
+      <h1>Внести финансовую запись</h1>
+      <form id="entryForm">
+        <label>Организация</label>
+        <select id="organizationId" required style="margin-bottom:16px;"></select>
+
+        <label>Тип операции</label>
+        <div style="display:flex; gap:10px; margin-bottom:6px;">
+          <label style="display:flex; align-items:center; gap:6px; font-weight:500; margin:0; cursor:pointer;">
+            <input type="radio" name="txType" value="expense" checked style="width:auto;"> Расход
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; font-weight:500; margin:0; cursor:pointer;">
+            <input type="radio" name="txType" value="income" style="width:auto;"> Доход
+          </label>
+        </div>
+
+        <label>Дата</label>
+        <input type="date" id="date" required>
+
+        <label>Категория</label>
+        <select id="category" required>
+          <option value="">Выберите категорию</option>
+        </select>
+
+        <div id="payrollFields" style="display:none; border:1px dashed var(--border); border-radius:8px; padding:14px; margin-top:14px;">
+          <label style="margin-top:0;">Сотрудник</label>
+          <select id="payrollEmployee">
+            <option value="">Выберите сотрудника</option>
+          </select>
+
+          <label>Тип выплаты</label>
+          <select id="payrollType">
+            <option value="">Выберите тип</option>
+          </select>
+
+          <label>За какой месяц начисление</label>
+          <input type="month" id="payrollPeriod">
+        </div>
+
+        <label>Сумма (₽)</label>
+        <input type="number" id="amount" min="0" step="1" required>
+
+        <label>Описание</label>
+        <textarea id="description" placeholder="Например: реклама в соцсетях"></textarea>
+
+        <label>Статус</label>
+        <select id="status">
+          <option>Оплачено</option>
+          <option>Ожидает</option>
+          <option>Просрочено</option>
+        </select>
+
+        <button type="submit">Сохранить запись</button>
+        <div class="msg" id="msg"></div>
+      </form>
+    </div>
+
+    <div class="recent">
+      <h2>Импорт из CSV или Excel-файла</h2>
+      <div class="card" style="padding:22px;">
+        <p style="font-size:13px; color:var(--text-soft); margin:0 0 14px;">
+          Ожидаемые колонки: <b>Дата, Категория, Сумма, Описание, Статус, Ответственный</b>
+          и, при желании, <b>Тип</b> (значения: <code>доход</code> / <code>расход</code> —
+          если колонки нет, все строки будут добавлены как расход). Формат даты: ДД.ММ.ГГГГ или ГГГГ-ММ-ДД.
+          Принимаются файлы <b>.csv</b>, <b>.xlsx</b>, <b>.xls</b>.
+        </p>
+        <input type="file" id="csvFile" accept=".csv,.xlsx,.xls" style="margin-bottom:12px;">
+        <div id="csvPreview" style="font-size:13px; color:var(--text-soft); margin-bottom:12px;"></div>
+        <button class="btn" id="csvImportBtn" style="width:auto; margin-top:0; display:none;" onclick="importCsv()">Импортировать записи</button>
+        <div class="msg" id="csvMsg"></div>
+      </div>
+    </div>
+
+    <div class="recent">
+      <h2>Импорт банковской выписки (любой банк)</h2>
+      <div class="card" style="padding:22px;">
+        <p style="font-size:13px; color:var(--text-soft); margin:0 0 14px;">
+          Экспортируй выписку из интернет-банка в CSV или Excel, загрузи файл — дальше сам укажешь,
+          какая колонка что означает (у каждого банка формат свой, это универсальный импорт).
+        </p>
+        <input type="file" id="stmtFile" accept=".csv,.xlsx,.xls" style="margin-bottom:12px;">
+        <div id="stmtMapping" style="display:none;">
+          <label>Колонка с датой</label>
+          <select id="stmtColDate"></select>
+
+          <label>Способ определения суммы</label>
+          <div style="display:flex; gap:14px; margin-bottom:6px;">
+            <label style="display:flex; align-items:center; gap:6px; font-weight:500; margin:0; cursor:pointer;">
+              <input type="radio" name="stmtAmountMode" value="single" checked style="width:auto;"> Одна колонка (+ доход / − расход)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; font-weight:500; margin:0; cursor:pointer;">
+              <input type="radio" name="stmtAmountMode" value="split" style="width:auto;"> Отдельно Дебет/Кредит
+            </label>
+          </div>
+          <div id="stmtSingleAmountRow">
+            <label>Колонка с суммой</label>
+            <select id="stmtColAmount"></select>
+          </div>
+          <div id="stmtSplitAmountRow" style="display:none;">
+            <label>Колонка "Кредит" (приход = доход)</label>
+            <select id="stmtColCredit"></select>
+            <label>Колонка "Дебет" (расход)</label>
+            <select id="stmtColDebit"></select>
+          </div>
+
+          <label>Колонка с описанием / назначением платежа</label>
+          <select id="stmtColDesc"></select>
+
+          <label>Категория для всех импортированных операций</label>
+          <input type="text" id="stmtCategory" value="Банковская выписка">
+
+          <button class="btn" id="stmtImportBtn" style="width:auto; margin-top:16px;" onclick="importStatement()">Импортировать выписку</button>
+        </div>
+        <div class="msg" id="stmtMsg"></div>
+      </div>
+    </div>
+
+    <div class="recent">
+      <h2>Последние внесённые записи</h2>
+      <div id="recentList"></div>
+    </div>
+  </div>
+
+<script>
+  async function goHome() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    window.location.href = '/dashboard.html';
+  }
+
+  async function checkAuth() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    if (data.mustChangePassword) { window.location.href = '/profile.html?expired=1'; return; }
+    document.getElementById('whoami').textContent = data.user.username + ' (' + data.user.role + ')';
+    document.getElementById('dashLink').style.display = '';
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+
+  const INCOME_CATEGORIES = ['Продажи', 'Услуги', 'Инвестиции', 'Прочие доходы'];
+  let expenseCategories = [];
+
+  function populateCategories(type) {
+    const sel = document.getElementById('category');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Выберите категорию</option>';
+    const list = type === 'income' ? INCOME_CATEGORIES : expenseCategories;
+    list.forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat; opt.textContent = cat;
+      sel.appendChild(opt);
+    });
+    const other = document.createElement('option');
+    other.value = '__other__'; other.textContent = 'Другое (указать)';
+    sel.appendChild(other);
+    if (list.includes(current)) sel.value = current;
+  }
+
+  document.querySelectorAll('input[name=txType]').forEach(radio => {
+    radio.addEventListener('change', (e) => populateCategories(e.target.value));
+  });
+
+  async function loadOrganizations() {
+    const res = await fetch('/api/organizations');
+    const data = await res.json();
+    const sel = document.getElementById('organizationId');
+    sel.innerHTML = data.organizations.map(o =>
+      `<option value="${o.id}">${o.legal_form} «${o.name}»</option>`
+    ).join('');
+  }
+
+  async function loadCategories() {
+    const orgId = document.getElementById('organizationId').value;
+    const res = await fetch('/api/budget-limits?organization_id=' + orgId);
+    const limits = await res.json();
+    expenseCategories = limits.map(l => l.category);
+    populateCategories('expense');
+  }
+  document.getElementById('organizationId').addEventListener('change', loadCategories);
+
+  document.getElementById('category').addEventListener('change', (e) => {
+    if (e.target.value === '__other__') {
+      const name = prompt('Введите название новой категории:');
+      if (name) {
+        const opt = document.createElement('option');
+        opt.value = name; opt.textContent = name; opt.selected = true;
+        e.target.insertBefore(opt, e.target.lastChild);
+      } else {
+        e.target.value = '';
+      }
+    }
+    togglePayrollFields();
+  });
+
+  function togglePayrollFields() {
+    const isPayroll = document.getElementById('category').value === 'Зарплата';
+    document.getElementById('payrollFields').style.display = isPayroll ? '' : 'none';
+    if (isPayroll) {
+      if (!document.getElementById('payrollPeriod').value) {
+        const now = new Date();
+        document.getElementById('payrollPeriod').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      }
+      loadPayrollData();
+    }
+  }
+
+  async function loadPayrollData() {
+    const orgId = document.getElementById('organizationId').value;
+    if (!orgId) return;
+    const res = await fetch('/api/employees?organization_id=' + orgId);
+    const data = await res.json();
+
+    const empSel = document.getElementById('payrollEmployee');
+    const activeEmployees = data.employees.filter(e => e.status === 'active');
+    empSel.innerHTML = '<option value="">Выберите сотрудника</option>' +
+      activeEmployees.map(e => `<option value="${e.id}">${e.full_name}${e.position ? ' (' + e.position + ')' : ''}</option>`).join('');
+    if (!activeEmployees.length) {
+      empSel.innerHTML = '<option value="">Нет сотрудников — добавьте в разделе "Сотрудники"</option>';
+    }
+
+    const typeSel = document.getElementById('payrollType');
+    typeSel.innerHTML = '<option value="">Выберите тип</option>' +
+      data.payrollTypes.map(t => `<option value="${t}">${t}</option>`).join('');
+  }
+
+  document.getElementById('organizationId').addEventListener('change', () => {
+    if (document.getElementById('category').value === 'Зарплата') loadPayrollData();
+  });
+
+  document.getElementById('date').valueAsDate = new Date();
+
+  document.getElementById('entryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msgEl = document.getElementById('msg');
+    msgEl.textContent = ''; msgEl.className = 'msg';
+
+    const payload = {
+      date: document.getElementById('date').value,
+      organization_id: document.getElementById('organizationId').value,
+      type: document.querySelector('input[name=txType]:checked').value,
+      category: document.getElementById('category').value,
+      amount: document.getElementById('amount').value,
+      description: document.getElementById('description').value,
+      status: document.getElementById('status').value
+    };
+    if (payload.category === 'Зарплата') {
+      payload.employee_id = document.getElementById('payrollEmployee').value || null;
+      payload.payroll_type = document.getElementById('payrollType').value || null;
+      payload.payroll_period = document.getElementById('payrollPeriod').value || null;
+    }
+    if (!payload.category) { msgEl.textContent = 'Выберите категорию'; msgEl.className = 'msg err'; return; }
+
+    try {
+      const res = await fetch('/api/transactions', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка сохранения');
+      msgEl.textContent = '✓ Запись сохранена, уведомление отправлено в Telegram';
+      msgEl.className = 'msg ok';
+      document.getElementById('amount').value = '';
+      document.getElementById('description').value = '';
+      loadRecent();
+    } catch (err) {
+      msgEl.textContent = err.message;
+      msgEl.className = 'msg err';
+    }
+  });
+
+  async function loadRecent() {
+    const orgId = document.getElementById('organizationId').value;
+    const res = await fetch('/api/transactions' + (orgId ? '?organization_id=' + orgId : ''));
+    const rows = await res.json();
+    const list = document.getElementById('recentList');
+    list.innerHTML = rows.slice(0, 8).map(r => {
+      const isIncome = r.type === 'income';
+      const sign = isIncome ? '+' : '−';
+      const color = isIncome ? 'var(--green)' : 'var(--text-soft)';
+      return `
+      <div class="recent-item">
+        <span><span class="cat">${r.category}</span> — ${r.description || ''}</span>
+        <span class="amt" style="color:${color};">${sign} ${Math.round(r.amount).toLocaleString('ru-RU')} ₽</span>
+      </div>
+    `;
+    }).join('') || '<div style="color:#999; font-size:13px;">Записей пока нет</div>';
+  }
+  document.getElementById('organizationId').addEventListener('change', loadRecent);
+
+  // ==================== ИМПОРТ CSV ====================
+  let parsedCsvRows = [];
+
+  function parseDateFlexible(str) {
+    if (!str) return null;
+    str = String(str).trim();
+    let m = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+    if (m) return `${m[3]}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`;
+    m = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return `${m[1]}-${String(m[2]).padStart(2,'0')}-${String(m[3]).padStart(2,'0')}`;
+    return null;
+  }
+
+  function parseTabularFile(file, onRows) {
+    const isExcel = /\.(xlsx|xls)$/i.test(file.name);
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const wb = XLSX.read(evt.target.result, { type: 'array' });
+        const firstSheet = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: '', raw: false });
+        onRows(rows);
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      Papa.parse(file, { header: true, skipEmptyLines: true, complete: (results) => onRows(results.data) });
+    }
+  }
+
+  document.getElementById('csvFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const previewEl = document.getElementById('csvPreview');
+    const btnEl = document.getElementById('csvImportBtn');
+    document.getElementById('csvMsg').textContent = '';
+    if (!file) { previewEl.textContent = ''; btnEl.style.display = 'none'; return; }
+
+    parseTabularFile(file, (rows) => {
+        parsedCsvRows = rows.map(r => {
+          const typeRaw = (r['Тип'] || '').toLowerCase().trim();
+          return {
+            date: parseDateFlexible(r['Дата']),
+            type: typeRaw.includes('доход') ? 'income' : 'expense',
+            category: (r['Категория'] || '').trim(),
+            amount: Number(String(r['Сумма'] || '').replace(/[^\d.-]/g, '')) || 0,
+            description: (r['Описание'] || '').trim(),
+            status: (r['Статус'] || '').trim() || 'Оплачено',
+            responsible: (r['Ответственный'] || '').trim()
+          };
+        }).filter(r => r.date && r.category && r.amount);
+
+        if (!parsedCsvRows.length) {
+          previewEl.innerHTML = '<span style="color:var(--red);">Не найдено ни одной корректной строки. Проверьте названия колонок и формат данных.</span>';
+          btnEl.style.display = 'none';
+          return;
+        }
+        const incomeCount = parsedCsvRows.filter(r => r.type === 'income').length;
+        const expenseCount = parsedCsvRows.length - incomeCount;
+        previewEl.innerHTML = `Найдено записей: <b>${parsedCsvRows.length}</b> (расход: ${expenseCount}, доход: ${incomeCount})`;
+        btnEl.style.display = '';
+      }
+    );
+  });
+
+  async function importCsv() {
+    const msgEl = document.getElementById('csvMsg');
+    msgEl.textContent = 'Импортирую...'; msgEl.className = 'msg';
+    try {
+      const res = await fetch('/api/transactions/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows: parsedCsvRows, organization_id: document.getElementById('organizationId').value })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка импорта');
+      msgEl.textContent = `✓ Импортировано: ${data.imported}${data.skipped ? ', пропущено: ' + data.skipped : ''}`;
+      msgEl.className = 'msg ok';
+      document.getElementById('csvFile').value = '';
+      document.getElementById('csvPreview').textContent = '';
+      document.getElementById('csvImportBtn').style.display = 'none';
+      loadRecent();
+    } catch (err) {
+      msgEl.textContent = err.message;
+      msgEl.className = 'msg err';
+    }
+  }
+
+  // ==================== ИМПОРТ БАНКОВСКОЙ ВЫПИСКИ (универсальный) ====================
+  let stmtHeaders = [];
+  let stmtRows = [];
+
+  document.querySelectorAll('input[name=stmtAmountMode]').forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      const isSingle = e.target.value === 'single';
+      document.getElementById('stmtSingleAmountRow').style.display = isSingle ? '' : 'none';
+      document.getElementById('stmtSplitAmountRow').style.display = isSingle ? 'none' : '';
+    });
+  });
+
+  document.getElementById('stmtFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const mappingEl = document.getElementById('stmtMapping');
+    document.getElementById('stmtMsg').textContent = '';
+    if (!file) { mappingEl.style.display = 'none'; return; }
+
+    parseTabularFile(file, (rows) => {
+        stmtRows = rows;
+        stmtHeaders = rows.length ? Object.keys(rows[0]) : [];
+        if (!stmtHeaders.length || !stmtRows.length) {
+          document.getElementById('stmtMsg').textContent = 'Не удалось прочитать файл — проверьте, что в нём есть заголовки колонок.';
+          document.getElementById('stmtMsg').className = 'msg err';
+          mappingEl.style.display = 'none';
+          return;
+        }
+        ['stmtColDate', 'stmtColAmount', 'stmtColCredit', 'stmtColDebit', 'stmtColDesc'].forEach(id => {
+          const sel = document.getElementById(id);
+          sel.innerHTML = stmtHeaders.map(h => `<option value="${h}">${h}</option>`).join('');
+        });
+        // эвристика — пытаемся угадать нужные колонки по типичным названиям
+        const guess = (patterns) => stmtHeaders.find(h => patterns.some(p => h.toLowerCase().includes(p)));
+        const dateCol = guess(['дата']);
+        const amountCol = guess(['сумма']);
+        const creditCol = guess(['кредит', 'приход', 'поступление']);
+        const debitCol = guess(['дебет', 'расход', 'списание']);
+        const descCol = guess(['назначение', 'описание', 'комментар']);
+        if (dateCol) document.getElementById('stmtColDate').value = dateCol;
+        if (amountCol) document.getElementById('stmtColAmount').value = amountCol;
+        if (creditCol) document.getElementById('stmtColCredit').value = creditCol;
+        if (debitCol) document.getElementById('stmtColDebit').value = debitCol;
+        if (descCol) document.getElementById('stmtColDesc').value = descCol;
+
+        mappingEl.style.display = '';
+      }
+    );
+  });
+
+  async function importStatement() {
+    const msgEl = document.getElementById('stmtMsg');
+    const dateCol = document.getElementById('stmtColDate').value;
+    const descCol = document.getElementById('stmtColDesc').value;
+    const category = document.getElementById('stmtCategory').value.trim() || 'Банковская выписка';
+    const mode = document.querySelector('input[name=stmtAmountMode]:checked').value;
+
+    const rows = stmtRows.map(r => {
+      const dateParsed = parseDateFlexible(r[dateCol]);
+      let amount = 0, type = 'expense';
+      if (mode === 'single') {
+        const raw = Number(String(r[document.getElementById('stmtColAmount').value] || '').replace(/[^\d.-]/g, '')) || 0;
+        amount = Math.abs(raw);
+        type = raw >= 0 ? 'income' : 'expense';
+      } else {
+        const credit = Number(String(r[document.getElementById('stmtColCredit').value] || '').replace(/[^\d.-]/g, '')) || 0;
+        const debit = Number(String(r[document.getElementById('stmtColDebit').value] || '').replace(/[^\d.-]/g, '')) || 0;
+        if (credit > 0) { amount = credit; type = 'income'; }
+        else { amount = debit; type = 'expense'; }
+      }
+      return {
+        date: dateParsed,
+        type,
+        category,
+        amount,
+        description: (r[descCol] || '').trim(),
+        status: 'Оплачено',
+        responsible: ''
+      };
+    }).filter(r => r.date && r.amount > 0);
+
+    if (!rows.length) {
+      msgEl.textContent = 'Не найдено ни одной корректной строки — проверьте сопоставление колонок.';
+      msgEl.className = 'msg err';
+      return;
+    }
+
+    msgEl.textContent = `Импортирую ${rows.length} операций...`; msgEl.className = 'msg';
+    try {
+      const res = await fetch('/api/transactions/import', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rows, organization_id: document.getElementById('organizationId').value })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка импорта');
+      msgEl.textContent = `✓ Импортировано: ${data.imported}${data.skipped ? ', пропущено: ' + data.skipped : ''}. Категорию можно уточнить позже вручную.`;
+      msgEl.className = 'msg ok';
+      document.getElementById('stmtFile').value = '';
+      document.getElementById('stmtMapping').style.display = 'none';
+      loadRecent();
+    } catch (err) {
+      msgEl.textContent = err.message;
+      msgEl.className = 'msg err';
+    }
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  }
+  applyTheme(localStorage.getItem('theme') || 'light');
+
+  (async () => {
+    const baseDocTitle = document.title;
+    let lastKnownUnread = null;
+
+  function playNotificationSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  }
+
+  async function pollChatUnread() {
+    try {
+      const res = await fetch('/api/chat/unread-count');
+      if (!res.ok) return;
+      const data = await res.json();
+      const badge = document.getElementById('chatUnreadBadge');
+      const label = data.unread > 99 ? '99+' : data.unread;
+      if (badge) {
+        badge.style.display = data.unread > 0 ? '' : 'none';
+        badge.textContent = label;
+      }
+      document.title = data.unread > 0 ? `(${label}) ${baseDocTitle}` : baseDocTitle;
+
+      if (lastKnownUnread !== null && data.unread > lastKnownUnread) {
+        playNotificationSound();
+      }
+      lastKnownUnread = data.unread;
+    } catch (e) {}
+  }
+  setInterval(pollChatUnread, 8000);
+  pollChatUnread();
+
+  checkAuth();
+    await loadOrganizations();
+    loadCategories();
+    loadRecent();
+  })();
+</script>
+</body>
+</html>

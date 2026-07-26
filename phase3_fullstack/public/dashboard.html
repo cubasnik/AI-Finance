@@ -1,0 +1,3635 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Finance — Панель управления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-dark: #0B1220; --navy: #16213E; --navy-mid: #1B2A4A; --blue: #2D6CDF; --blue-light: #EAF1FE;
+    --bg-page: #F3F5F9; --card: #FFFFFF; --text: #12172A; --text-soft: #626B85; --border: #E4E8F0;
+    --green: #1F9254; --green-bg: #E7F5EC; --amber: #C98A1F; --amber-bg: #FBF1DF; --red: #D33F3F; --red-bg: #FCEAEA;
+    --readonly-bg: #EDEFF5;
+  }
+  html[data-theme="dark"] {
+    --navy: #C7D0E6; --blue-light: #1E2A44; --bg-page: #10141F; --card: #1A2033;
+    --text: #E6E9F2; --text-soft: #9098AC; --border: #2C3348;
+    --green-bg: #163325; --amber-bg: #3A2E12; --red-bg: #3A1A1A;
+    --readonly-bg: #232A3D;
+  }
+  html[data-theme="dark"] input, html[data-theme="dark"] select, html[data-theme="dark"] textarea {
+    background: #232A3D; color: var(--text); border-color: var(--border);
+  }
+  html[data-theme="dark"] table tr:hover, html[data-theme="dark"] .contact-row:hover { background: #202737; }
+  html[data-theme="dark"] .admin-panel, html[data-theme="dark"] .sidebar-btn { background: var(--card); }
+  html[data-theme="dark"] .cal-item, html[data-theme="dark"] .bubble.theirs { background: var(--card); }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-page); font-family: 'Inter', sans-serif; color: var(--text); }
+
+  .topbar {
+    position: relative; background: var(--navy-dark);
+    background-image: linear-gradient(120deg, var(--navy-dark) 55%, var(--navy) 100%);
+    overflow: hidden; padding: 20px 32px;
+  }
+  .topbar::after {
+    content: ''; position: absolute; top: 0; right: -10%; width: 60%; height: 200%;
+    background: rgba(45,108,223,0.10); transform: rotate(-18deg); pointer-events: none;
+  }
+  .topbar-inner {
+    position: relative; max-width: 1520px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  }
+  .brand { display: flex; align-items: baseline; gap: 8px; }
+  .brand .mark { font-weight: 800; font-size: 20px; color: #fff; }
+  .brand .mark span { color: var(--blue); }
+  .brand .sub { font-size: 12px; color: rgba(255,255,255,0.5); font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.06em; }
+  .topbar-meta { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.6); display: flex; gap: 16px; align-items: center; }
+  .topbar-meta a { color: rgba(255,255,255,0.75); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.4); cursor: pointer; }
+  .org-selector-sync option { color: #12172A; background: #fff; }
+
+  .wrap {
+    max-width: 1520px; margin: 0 auto; padding: 22px 24px 60px;
+    display: flex; gap: 24px; align-items: flex-start;
+  }
+  .sidebar {
+    flex: 0 0 210px; display: flex; flex-direction: column; gap: 6px;
+    position: sticky; top: 20px;
+  }
+  .sidebar-title {
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-soft); padding: 0 4px 4px;
+  }
+  .sidebar-btn {
+    text-align: left; font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px;
+    padding: 11px 14px; border-radius: 9px; border: 1px solid var(--border);
+    background: #fff; color: var(--text-soft); cursor: pointer;
+  }
+  .sidebar-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+  .main-content { flex: 1; min-width: 0; }
+  .admin-panel {
+    display: none; background: var(--card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 22px; margin-bottom: 20px;
+  }
+  .admin-panel.active { display: block; }
+  @media (max-width: 860px) {
+    .wrap { flex-direction: column; }
+    .sidebar { flex-direction: row; flex-wrap: wrap; position: static; width: 100%; }
+    .sidebar-btn { flex: 1 1 auto; }
+  }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 1px 2px rgba(16,24,64,0.04); }
+
+  details.card summary {
+    cursor: pointer; list-style: none; padding: 16px 20px; font-weight: 600; font-size: 14px; color: var(--navy);
+    display: flex; align-items: center; gap: 8px;
+  }
+  details.card summary::-webkit-details-marker { display: none; }
+  details.card summary::after {
+    content: 'Развернуть ▾';
+    margin-left: auto;
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-soft);
+    text-transform: none;
+    letter-spacing: normal;
+  }
+  details.card[open] summary::after {
+    content: 'Свернуть ▴';
+  }
+  .config-body { padding: 4px 20px 20px; display: flex; flex-direction: column; gap: 16px; }
+  .limits-grid { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+  .limit-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; background: var(--bg-page); border-radius: 8px; padding: 6px 10px; }
+  .limit-item span { color: var(--text-soft); white-space: nowrap; }
+  .limit-item input { width: 90px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; }
+  .btn { font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px; padding: 9px 18px; border-radius: 8px; border: none; background: var(--blue); color: #fff; cursor: pointer; }
+  .btn.secondary { background: var(--blue-light); color: var(--blue); }
+  .inline-input {
+    font-family: 'IBM Plex Mono', monospace; font-size: 13px; padding: 8px 10px;
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabs {
+    display: flex; gap: 4px; margin: 20px 0 4px; border-bottom: 2px solid var(--border);
+    position: sticky; top: 0; z-index: 50; background: var(--bg-page);
+    overflow-x: auto; white-space: nowrap; padding-top: 2px;
+  }
+  .tab-btn {
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13.5px;
+    padding: 10px 18px; border: none; background: none; color: var(--text-soft);
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px;
+  }
+  .tab-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .tab-org-row {
+    display: flex; align-items: center; gap: 10px; margin: 20px 0 4px;
+  }
+  .tab-org-row label {
+    font-size: 12.5px; font-weight: 600; color: var(--text-soft);
+  }
+  .tab-org-row select {
+    font-family: 'Inter', sans-serif; font-size: 13px; padding: 7px 11px;
+    border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text);
+    min-width: 200px;
+  }
+  .header-org-select {
+    font-family: 'Inter', sans-serif; font-size: 13px; padding: 7px 11px;
+    border: 1px solid var(--border); border-radius: 8px; background: #fff; color: var(--text);
+    min-width: 200px;
+  }
+  .cattype-btn {
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 13px;
+    padding: 8px 16px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; color: var(--text-soft); cursor: pointer;
+  }
+  .cattype-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  .flow-summary {
+    display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 16px;
+    font-size: 13.5px;
+  }
+  .flow-summary .chip {
+    padding: 8px 14px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px;
+  }
+  .flow-summary .chip.income { background: var(--green-bg); color: var(--green); }
+  .flow-summary .chip.expense { background: var(--red-bg); color: var(--red); }
+  .flow-summary .chip.net { background: var(--blue-light); color: var(--blue); }
+
+  .org-row {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    padding: 12px; background: var(--bg-page); border-radius: 8px; margin-bottom: 10px;
+  }
+  #employeesList .org-row { flex-wrap: nowrap; }
+  #employeesList .org-row .save-btn,
+  #employeesList .org-row .del-btn2 { flex-shrink: 0; white-space: nowrap; }
+  #employeesList .org-row .emp-total { flex-shrink: 0; white-space: nowrap; }
+  #employeesList .org-row.locked input[readonly] { background: var(--readonly-bg); color: var(--text-soft); cursor: default; }
+  #employeesList .org-row.locked select:disabled { background: var(--readonly-bg); color: var(--text-soft); }
+
+  .emp-table { width: 100%; border-collapse: collapse; }
+  .emp-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-soft); font-weight: 700; padding: 8px 10px; border-bottom: 2px solid var(--border); white-space: nowrap;
+  }
+  .emp-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .emp-table input, .emp-table select {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px;
+    font-size: 13px; font-family: 'Inter', sans-serif; box-sizing: border-box;
+  }
+  .emp-table input[readonly] {
+    background: transparent; border-color: transparent; color: var(--text); cursor: default; padding-left: 2px;
+  }
+  .emp-table select:disabled {
+    background: transparent; border-color: transparent; color: var(--text); appearance: none; padding-left: 2px;
+  }
+  .emp-table input.emp-name[readonly] { font-weight: 700; }
+  .emp-table select.cp-legal-form:disabled {
+    display: inline-block; width: auto; min-width: 60px; text-align: center;
+    background: var(--blue-light); color: var(--blue); border: none; border-radius: 20px;
+    padding: 3px 12px; font-size: 11px; font-weight: 700; appearance: none; -webkit-appearance: none;
+  }
+  .emp-table td.emp-total-cell { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; white-space: nowrap; }
+  .emp-table td.emp-actions { white-space: nowrap; }
+  .emp-table td.emp-actions button { margin-right: 6px; font-size: 12px; padding: 7px 12px; border-radius: 6px; border: none; cursor: pointer; }
+  .emp-table td.emp-actions .save-btn { background: var(--blue); color: #fff; }
+  .emp-table td.emp-actions .del-btn2 { background: var(--red-bg); color: var(--red); }
+
+  /* ==================== СТИЛИ ДЛЯ ОТРИСОВАННОГО RULES.md ==================== */
+  .markdown-content h1 { font-size: 19px; margin: 0 0 12px; color: var(--navy); }
+  .markdown-content h2 { font-size: 16px; margin: 26px 0 10px; color: var(--navy); border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+  .markdown-content h3 { font-size: 13.5px; margin: 18px 0 8px; color: var(--navy); }
+  .markdown-content p { font-size: 13.5px; line-height: 1.6; margin: 0 0 10px; }
+  .markdown-content ul, .markdown-content ol { font-size: 13.5px; line-height: 1.6; padding-left: 22px; margin: 0 0 12px; }
+  .markdown-content li { margin-bottom: 4px; }
+  .markdown-content strong { color: var(--text); }
+  .markdown-content code {
+    background: var(--readonly-bg, #EDEFF5); padding: 1px 6px; border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  }
+  .markdown-content hr { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+  .markdown-content table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; }
+  .markdown-content th {
+    text-align: left; background: var(--bg-page); color: var(--text-soft); font-weight: 700;
+    padding: 8px 10px; border: 1px solid var(--border); font-size: 12px; text-transform: uppercase; letter-spacing: 0.03em;
+  }
+  .markdown-content td { padding: 8px 10px; border: 1px solid var(--border); text-align: center; }
+  .markdown-content td:first-child { text-align: left; font-weight: 600; }
+
+  /* ==================== ПРАВА ДОСТУПА ПО РОЛЯМ ==================== */
+
+  /* Обычный пользователь не видит зарплату сотрудников — только список и контакты.
+     Владелец и Бухгалтер (ГБ) видят всё как обычно. */
+  body.role-user .emp-salary-col {
+    display: none !important;
+  }
+  /* Обычный пользователь: просмотр + скачивание Excel/PDF везде, но без прав добавлять/менять/удалять
+     в Организациях, Банковских счетах и Пользователях. Лимиты бюджета — тоже только просмотр.
+     Сотрудники и Табель посещаемости остаются полностью редактируемыми для этой роли. */
+  body.role-user #orgsPanel .save-btn,
+  body.role-user #orgsPanel .del-btn2,
+  body.role-user #addOrgBtn,
+  body.role-user #addOrgHint,
+  body.role-user #bankAccountsPanel .save-btn,
+  body.role-user #bankAccountsPanel .del-btn2,
+  body.role-user #addBankAccountBtn,
+  body.role-user #usersPanel .save-btn,
+  body.role-user #usersPanel .del-btn2,
+  body.role-user #addUserBtn {
+    display: none !important;
+  }
+  body.role-user #orgsList input, body.role-user #orgsList select,
+  body.role-user #bankAccountsList input {
+    pointer-events: none; opacity: 0.7;
+  }
+
+  /* Бухгалтер: Лимиты бюджета — только просмотр, без права менять */
+  body.role-accountant #configPanel .btn {
+    display: none !important;
+  }
+  body.role-accountant #configPanel input, body.role-accountant #configPanel select {
+    pointer-events: none; opacity: 0.7;
+  }
+  /* Обычный пользователь — не видит Лимиты бюджета вообще */
+  body.role-user .sidebar-btn[data-panel="configPanel"] {
+    display: none !important;
+  }
+
+  /* Обычный пользователь: Сотрудники, Доп.соц.пакет, Заказчики, Продавцы — только просмотр,
+     редактирование доступно лишь Владельцу, Главному Бухгалтеру, ОД, ДК (роль accountant) */
+  body.role-user #employeesPanel .save-btn,
+  body.role-user #employeesPanel .del-btn2,
+  body.role-user #employeesPanel button[onclick="addEmployeeRow()"],
+  body.role-user #socialPackagePanel .save-btn,
+  body.role-user #socialPackagePanel .del-btn2,
+  body.role-user #socialPackagePanel button[onclick="addSocialPackageRow()"],
+  body.role-user #customersPanel .save-btn,
+  body.role-user #customersPanel .del-btn2,
+  body.role-user #customersPanel button[onclick="addCounterpartyRow('customer')"],
+  body.role-user #suppliersPanel .save-btn,
+  body.role-user #suppliersPanel .del-btn2,
+  body.role-user #suppliersPanel button[onclick="addCounterpartyRow('supplier')"] {
+    display: none !important;
+  }
+  /* Обычный пользователь: вкладки ЗП/Премии/Штрафы — полностью скрыты (не видит вообще) */
+  body.role-user .tab-btn[data-tab="salary"],
+  body.role-user .tab-btn[data-tab="bonuses"],
+  body.role-user .tab-btn[data-tab="penalties"] {
+    display: none !important;
+  }
+  body.role-user #tab-salary .save-btn,
+  body.role-user #tab-bonuses .save-btn,
+  body.role-user #tab-bonuses .del-btn2,
+  body.role-user #tab-bonuses button[onclick="addAdjustmentRow('bonus')"],
+  body.role-user #tab-penalties .save-btn,
+  body.role-user #tab-penalties .del-btn2,
+  body.role-user #tab-penalties button[onclick="addAdjustmentRow('penalty')"] {
+    display: none !important;
+  }
+  .emp-actions .contacts-btn {
+    background: var(--blue-light); color: var(--blue); border: none; border-radius: 6px;
+    padding: 7px 12px; font-size: 12px; cursor: pointer; margin-right: 6px;
+  }
+  /* Обычный пользователь — только просмотр контактов заказчика/продавца, без права редактировать */
+  body.role-user #cpContactsModal .save-btn,
+  body.role-user #cpContactsModal .del-btn2,
+  body.role-user #cpContactsModal button[onclick="addCpContactRow()"] {
+    display: none !important;
+  }
+
+  .org-row input, .org-row select {
+    font-family: 'Inter', sans-serif; font-size: 12.5px; padding: 7px 9px;
+    border: 1px solid var(--border); border-radius: 6px;
+  }
+  .org-row .org-name { flex: 1 1 160px; }
+  .org-row .org-inn { flex: 0 1 120px; }
+  .org-row .org-regime { flex: 1 1 200px; }
+  .org-row .org-rate { flex: 0 1 90px; }
+  .org-row .org-patent { flex: 0 1 130px; }
+  .org-row button { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: none; cursor: pointer; }
+  .org-row .save-btn { background: var(--blue); color: #fff; }
+  .org-row .del-btn2 { background: var(--red-bg); color: var(--red); }
+  .org-row-requisites {
+    margin-top: -6px; background: var(--readonly-bg); font-size: 12px;
+  }
+  .org-row-requisites input { font-size: 12px; }
+
+  .orgs-summary-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; }
+  .orgs-summary-table th {
+    text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--text-soft); font-weight: 600; padding: 8px 10px; border-bottom: 2px solid var(--border);
+  }
+  .orgs-summary-table td { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .orgs-summary-table .org-tag {
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 20px;
+    background: var(--blue-light); color: var(--blue);
+  }
+
+  .period-btn {
+    font-family: 'Inter', sans-serif; font-weight: 600; font-size: 12.5px;
+    padding: 7px 14px; border: 1px solid var(--border); border-radius: 8px;
+    background: #fff; color: var(--text-soft); cursor: pointer;
+  }
+  .period-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .tax-result-row {
+    display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px;
+  }
+  .tax-disclaimer {
+    margin-top: 16px; padding: 12px 14px; background: var(--amber-bg); border-left: 4px solid var(--amber);
+    border-radius: 0 8px 8px 0; font-size: 12.5px; color: var(--text);
+  }
+  .scope-note {
+    padding: 12px 14px; background: var(--blue-light); border-left: 4px solid var(--blue);
+    border-radius: 0 8px 8px 0; font-size: 12.5px; color: var(--text); margin-bottom: 16px;
+  }
+
+  .cal-item {
+    display: flex; align-items: center; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .cal-item:last-child { border-bottom: none; }
+  .cal-date {
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px;
+    min-width: 90px; color: var(--navy);
+  }
+  .cal-title { flex: 1; font-size: 13.5px; }
+  .cal-badge {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 20px; white-space: nowrap;
+  }
+  .cal-badge.soon { background: var(--red-bg); color: var(--red); }
+  .cal-badge.upcoming { background: var(--amber-bg); color: var(--amber); }
+  .cal-badge.later { background: var(--green-bg); color: var(--green); }
+  .cal-type-icon { font-size: 15px; }
+  .card-field-check {
+    display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; cursor: pointer;
+  }
+  .card-field-check input { width: auto; }
+
+  section { margin-top: 24px; }
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+  .section-title { font-size: 16px; font-weight: 700; color: var(--navy); margin: 0; }
+
+  .kpi-row { display: flex; flex-wrap: wrap; gap: 16px; }
+  .kpi-card { flex: 1 1 220px; padding: 20px 22px; }
+  .kpi-card .label { font-size: 12px; color: var(--text-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+  .kpi-card .value { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 26px; color: var(--navy); }
+  .kpi-card .value.green { color: var(--green); } .kpi-card .value.red { color: var(--red); }
+  .kpi-card .note { margin-top: 8px; font-size: 12.5px; color: var(--text-soft); }
+
+  .alert { display: flex; gap: 12px; align-items: flex-start; padding: 13px 16px; border-radius: 10px; background: var(--red-bg); border-left: 4px solid var(--red); margin-bottom: 8px; font-size: 13.5px; }
+  .alert.warn { background: var(--amber-bg); border-color: var(--amber); }
+
+  .split-row { display: flex; gap: 20px; flex-wrap: wrap; align-items: stretch; }
+  .split-row > .card { flex: 1 1 380px; padding: 22px; }
+
+  .cat-item { margin-bottom: 16px; } .cat-item:last-child { margin-bottom: 0; }
+  .cat-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; gap: 8px; flex-wrap: wrap; }
+  .cat-name { font-weight: 600; font-size: 13.5px; }
+  .cat-figures { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-soft); white-space: nowrap; }
+  .cat-track { height: 9px; background: var(--bg-page); border-radius: 5px; overflow: hidden; }
+  .cat-fill { height: 100%; border-radius: 5px; }
+
+  .table-card { padding: 22px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; min-width: 660px; }
+  thead th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-soft); font-weight: 600; border-bottom: 2px solid var(--border); padding: 10px 12px; }
+  thead th.num { text-align: right; min-width: 110px; }
+  tbody td { padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+  tbody td.num { text-align: right; font-family: 'IBM Plex Mono', monospace; white-space: nowrap; }
+  tbody tr:hover { background: var(--bg-page); }
+  .tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+  .tag.paid { background: var(--green-bg); color: var(--green); }
+  .tag.pending { background: var(--amber-bg); color: var(--amber); }
+  .tag.overdue { background: var(--red-bg); color: var(--red); }
+  .tag.income { background: var(--green-bg); color: var(--green); }
+  .tag.expense { background: var(--red-bg); color: var(--red); }
+  .del-btn { background: none; border: none; color: var(--red); cursor: pointer; font-size: 12px; }
+
+  .filters-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters-row select, .filters-row input {
+    font-family: 'Inter', sans-serif; font-size: 13px; padding: 8px 11px;
+    border: 1px solid var(--border); border-radius: 8px;
+  }
+  .filters-row input[type=text] { flex: 1; min-width: 160px; }
+
+  .empty-state { font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: var(--text-soft); padding: 30px 0; text-align: center; }
+
+  @media (max-width: 640px) {
+    .topbar { padding: 16px 18px; } .wrap { padding: 20px 14px 40px; } .kpi-card { flex: 1 1 100%; }
+    .tabs { overflow-x: auto; white-space: nowrap; }
+  }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(11,18,32,0.5); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box { background: #fff; border-radius: 14px; padding: 26px; width: 100%; max-width: 420px; max-height: 85vh; overflow-y: auto; }
+  .modal-box h3 { margin: 0 0 16px; font-size: 16px; }
+  .modal-box label { display: block; font-size: 12px; font-weight: 600; color: var(--text-soft); margin: 12px 0 4px; }
+  .modal-box label:first-of-type { margin-top: 0; }
+  .modal-box input, .modal-box select, .modal-box textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--border); border-radius: 8px; font-size: 13.5px; font-family: 'Inter', sans-serif;
+  }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions button { flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600; cursor: pointer; font-size: 13.5px; }
+  .modal-actions .primary { background: var(--blue); color: #fff; }
+  .modal-actions .secondary { background: var(--bg-page); color: var(--text-soft); }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand" onclick="goHome()" style="cursor:pointer;">
+        <span class="mark">AI <span>Finance</span></span>
+        <span class="sub">панель управления бюджетом</span>
+      </div>
+      <div class="topbar-meta">
+        <span id="whoami"></span>
+        <a onclick="toggleTheme()" id="themeToggleBtn" style="cursor:pointer;">🌙</a>
+        <select id="orgSelector" class="org-selector-sync" style="font-family:'IBM Plex Mono',monospace; font-size:12px; padding:5px 8px; border-radius:6px; border:none; background:rgba(255,255,255,0.12); color:#fff;"></select>
+        <a onclick="location.href='/entry.html'">+ Внести запись</a>
+        <a onclick="location.href='/profile.html'">Профиль</a>
+        <a onclick="location.href='/colleagues.html'">Пользователи</a>
+        <a onclick="location.href='/chat.html'">Чат<span id="chatUnreadBadge" style="display:none; background:var(--red); color:#fff; border-radius:20px; padding:1px 6px; font-size:10px; margin-left:4px;"></span></a>
+        <a onclick="logout()">Выйти</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <aside class="sidebar">
+      <div class="sidebar-title">Управление</div>
+      <button class="sidebar-btn" data-panel="orgsPanel">🏢 Организации</button>
+      <button class="sidebar-btn" data-panel="bankAccountsPanel">🏦 Банковские счета</button>
+      <button class="sidebar-btn" data-panel="companyCardPanel">🪪 Карточка компании</button>
+      <button class="sidebar-btn" data-panel="configPanel">⚙ Лимиты бюджета</button>
+      <button class="sidebar-btn" data-panel="usersPanel">👤 Пользователи</button>
+      <button class="sidebar-btn" data-panel="employeesPanel">👥 Сотрудники</button>
+      <button class="sidebar-btn" data-panel="customersPanel">🧾 Заказчики</button>
+      <button class="sidebar-btn" data-panel="suppliersPanel">📦 Продавцы</button>
+      <button class="sidebar-btn" data-panel="socialPackagePanel">🎁 Доп. соц. пакет</button>
+      <button class="sidebar-btn" data-panel="rulesPanel">📋 Правила</button>
+    </aside>
+
+    <main class="main-content">
+
+    <div class="card admin-panel" id="orgsPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">🏢 Организации (ООО / ИП) и налоговые режимы</h2>
+      <div class="config-body">
+        <div id="orgsSummary"></div>
+        <div class="tab-org-row" style="margin:0;">
+          <label>Редактировать компанию:</label>
+          <select id="orgEditSelector"></select>
+        </div>
+        <div id="orgsList"></div>
+        <button class="btn secondary" id="addOrgBtn" onclick="addOrgRow()">+ Добавить организацию</button>
+        <span id="addOrgHint" style="font-size:12px; color:var(--text-soft); display:none;">
+          Чтобы добавить новую компанию, выберите "Все компании" вверху страницы
+        </span>
+        <span id="orgsStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="bankAccountsPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">🏦 Банковские счета</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="bankOrgSelector"></select>
+        </div>
+        <div id="bankAccountsNoOrgNote" class="scope-note" style="display:none;">
+          ℹ️ Сначала создайте хотя бы одну организацию (раздел "🏢 Организации").
+        </div>
+        <div id="bankAccountsList"></div>
+        <div>
+          <button class="btn secondary" id="addBankAccountBtn" onclick="addBankAccountRow()">+ Добавить счёт</button>
+          <span id="bankAccountsStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="companyCardPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">🪪 Карточка компании (скачать PDF)</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="cardOrgSelector"></select>
+        </div>
+        <div>
+          <label style="display:block; margin-bottom:8px; font-size:12.5px; color:var(--text-soft); font-weight:600;">
+            Какие реквизиты включить в карточку:
+          </label>
+          <div class="limits-grid" id="cardFieldsGrid" style="gap:6px 18px;">
+            <label class="card-field-check"><input type="checkbox" value="inn" checked> ИНН</label>
+            <label class="card-field-check"><input type="checkbox" value="kpp" checked> КПП</label>
+            <label class="card-field-check"><input type="checkbox" value="ogrn" checked> ОГРН/ОГРНИП</label>
+            <label class="card-field-check"><input type="checkbox" value="legal_address" checked> Юридический адрес</label>
+            <label class="card-field-check"><input type="checkbox" value="postal_address" checked> Почтовый адрес</label>
+            <label class="card-field-check"><input type="checkbox" value="phone" checked> Телефон</label>
+            <label class="card-field-check"><input type="checkbox" value="contact_person" checked> ФИО контактного лица</label>
+            <label class="card-field-check"><input type="checkbox" value="bank_accounts" checked> Банковские реквизиты</label>
+          </div>
+        </div>
+        <div>
+          <button class="btn" onclick="downloadCompanyCard()">⬇ Скачать карточку (PDF)</button>
+          <span id="cardStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+        </div>
+        <div>
+          <label style="display:block; margin:20px 0 10px; font-size:12.5px; color:var(--text-soft); font-weight:600;">
+            Предпросмотр:
+          </label>
+          <div id="cardPreviewWrap" style="border:1px solid var(--border); border-radius:10px; padding:24px; background:#F3F5F9; overflow-x:auto;">
+            <div id="cardPreview" style="background:#fff; box-shadow:0 2px 10px rgba(16,24,64,0.08); margin:0 auto;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="configPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">⚙ Лимиты бюджета и стартовый баланс</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select class="org-selector-sync"></select>
+        </div>
+        <div id="limitsNoOrgNote" class="scope-note" style="display:none;">
+          ℹ️ Выберите конкретную компанию вверху страницы, чтобы настроить её лимиты бюджета — у каждой компании они свои.
+        </div>
+        <div class="scope-note" id="limitsReadOnlyNote" style="display:none;">
+          🔒 Изменять лимиты бюджета может только владелец. Вам доступен только просмотр текущих значений.
+        </div>
+        <div id="limitsContent">
+        <div>
+          <label style="display:block; margin-bottom:8px; font-size:12.5px; color:var(--text-soft); font-weight:600;">Стартовый баланс на начало учёта (₽) — для расчёта Денежного потока</label>
+          <input type="number" id="startingBalance" class="inline-input" value="0" style="max-width:200px;">
+        </div>
+        <div class="limits-grid" id="limitsGrid"></div>
+        <div>
+          <button class="btn secondary" onclick="addCategoryRow()">+ Добавить категорию</button>
+          <button class="btn" onclick="applyLimits()">Сохранить лимиты</button>
+          <span id="limitsStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+        </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="usersPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">👤 Пользователи</h2>
+      <div class="config-body">
+        <div id="usersSummary"></div>
+        <div id="usersEditList"></div>
+        <button class="btn secondary" id="addUserBtn" onclick="addUserRow()">+ Добавить пользователя</button>
+        <span id="usersStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="employeesPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">👥 Сотрудники</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="employeeOrgSelector"></select>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div id="employeesCount" style="font-size:13px; color:var(--text-soft);"></div>
+          <button class="btn secondary" onclick="exportEmployeesToExcel()">⬇ Скачать в Excel</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:210px;">ФИО</th>
+                <th style="min-width:150px;">Должность</th>
+                <th style="min-width:120px;">Подразделение</th>
+                <th style="min-width:130px;">Статус</th>
+                <th style="min-width:170px;">Раб. телефон</th>
+                <th style="min-width:170px;">Личный телефон</th>
+                <th style="min-width:170px;">Раб. почта</th>
+                <th style="min-width:140px;">Telegram</th>
+                <th style="min-width:160px;"></th>
+              </tr>
+            </thead>
+            <tbody id="employeesList"></tbody>
+            <tfoot>
+              <tr id="employeesTotalsRow" style="font-weight:700; background:var(--bg-page);"></tr>
+            </tfoot>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="addEmployeeRow()">+ Добавить сотрудника</button>
+        <span id="employeesStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="customersPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">🧾 Заказчики</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="customerOrgSelector"></select>
+        </div>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:80px;">Форма</th>
+                <th style="min-width:180px;">Название</th>
+                <th style="min-width:120px;">ИНН</th>
+                <th style="min-width:150px;">Контактное лицо</th>
+                <th style="min-width:170px;">Телефон</th>
+                <th style="min-width:170px;">Email</th>
+                <th style="min-width:180px;">Адрес</th>
+                <th style="min-width:160px;">Комментарий</th>
+                <th style="min-width:120px;"></th>
+              </tr>
+            </thead>
+            <tbody id="customersList"></tbody>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="addCounterpartyRow('customer')">+ Добавить заказчика</button>
+        <span id="customersStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="suppliersPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">📦 Продавцы</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="supplierOrgSelector"></select>
+        </div>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:80px;">Форма</th>
+                <th style="min-width:180px;">Название</th>
+                <th style="min-width:120px;">ИНН</th>
+                <th style="min-width:150px;">Контактное лицо</th>
+                <th style="min-width:170px;">Телефон</th>
+                <th style="min-width:170px;">Email</th>
+                <th style="min-width:180px;">Адрес</th>
+                <th style="min-width:160px;">Комментарий</th>
+                <th style="min-width:120px;"></th>
+              </tr>
+            </thead>
+            <tbody id="suppliersList"></tbody>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="addCounterpartyRow('supplier')">+ Добавить продавца</button>
+        <span id="suppliersStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="socialPackagePanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">🎁 Дополнительный Соц. Пакет</h2>
+      <div class="config-body">
+        <div class="scope-note">
+          ℹ️ Общий справочник дополнительных выплат — единый для всех компаний (например: причина — "Содержание собаки",
+          сумма — 1 000 ₽, комментарий — "взял на обеспечение"). Не привязан к конкретной компании или сотруднику.
+        </div>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:80px;">Дата</th>
+                <th style="min-width:180px;">Причина выплат</th>
+                <th style="min-width:110px;">Сумма</th>
+                <th style="min-width:200px;">Комментарий</th>
+                <th style="min-width:120px;"></th>
+              </tr>
+            </thead>
+            <tbody id="socialPackageList"></tbody>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="addSocialPackageRow()">+ Добавить выплату</button>
+        <span id="socialPackageStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-attendance">
+      <h2 class="section-title" style="margin-bottom:16px;">🗓️ Табель посещаемости</h2>
+      <div class="config-body">
+        <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+          <div class="tab-org-row" style="margin:0;">
+            <label>Компания:</label>
+            <select id="attendanceOrgSelector" class="org-selector-sync"></select>
+          </div>
+          <div class="tab-org-row" style="margin:0;">
+            <label>Месяц:</label>
+            <input type="month" id="attendanceMonth">
+          </div>
+        </div>
+        <div class="scope-note" style="margin-top:14px;">
+          ℹ️ Стандартный рабочий день — 8 часов. Если сотрудник отсутствовал (прогул, выходной за
+          свой счёт) — поставьте 0 часов на этот день. Если работал больше 8 часов — впишите
+          фактическое количество (например 10). Зарплата пересчитывается автоматически:
+          <b>скорректированная ЗП = официальная ЗП + (отработано часов − стандартные часы) × часовая ставка</b>.
+        </div>
+        <div id="attendanceGrid" style="overflow-x:auto; margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-salary">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <h2 class="section-title" style="margin:0;">💰 ЗП сотрудников</h2>
+        <button class="btn secondary" onclick="exportSalaryToExcel()">⬇ Скачать в Excel</button>
+      </div>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="salaryOrgSelector" class="org-selector-sync"></select>
+        </div>
+        <div class="scope-note" style="margin-top:14px;">
+          ℹ️ Официальную и неофициальную ЗП может менять только Владелец, Главный Бухгалтер, ОД, ДК.
+        </div>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:210px;">ФИО</th>
+                <th style="min-width:130px;">Статус</th>
+                <th style="min-width:120px;">Офиц. ЗП</th>
+                <th style="min-width:120px;">Неофиц. ЗП</th>
+                <th style="min-width:110px;">Итого</th>
+                <th style="min-width:120px;"></th>
+              </tr>
+            </thead>
+            <tbody id="salaryList"></tbody>
+            <tfoot>
+              <tr id="salaryTotalsRow" style="font-weight:700; background:var(--bg-page);"></tr>
+            </tfoot>
+          </table>
+        </div>
+        <span id="salaryStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px;"></span>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-bonuses">
+      <h2 class="section-title" style="margin-bottom:16px;">🏆 Премии</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="bonusOrgSelector" class="org-selector-sync"></select>
+        </div>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:80px;">Дата</th>
+                <th style="min-width:210px;">ФИО</th>
+                <th style="min-width:170px;">Причина</th>
+                <th style="min-width:110px;">Сумма</th>
+                <th style="min-width:180px;">Комментарий</th>
+                <th style="min-width:120px;"></th>
+              </tr>
+            </thead>
+            <tbody id="bonusesList"></tbody>
+            <tfoot>
+              <tr id="bonusesTotalsRow" style="font-weight:700; background:var(--bg-page);"></tr>
+            </tfoot>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="addAdjustmentRow('bonus')">+ Добавить премию</button>
+        <span id="bonusesStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-penalties">
+      <h2 class="section-title" style="margin-bottom:16px;">⚠️ Штрафы</h2>
+      <div class="config-body">
+        <div class="tab-org-row" style="margin:0;">
+          <label>Компания:</label>
+          <select id="penaltyOrgSelector" class="org-selector-sync"></select>
+        </div>
+        <div style="overflow-x:auto; margin-top:16px;">
+          <table class="emp-table">
+            <thead>
+              <tr>
+                <th style="min-width:40px;">№</th>
+                <th style="min-width:80px;">Дата</th>
+                <th style="min-width:210px;">ФИО</th>
+                <th style="min-width:170px;">Причина</th>
+                <th style="min-width:110px;">Сумма</th>
+                <th style="min-width:180px;">Комментарий</th>
+                <th style="min-width:120px;"></th>
+              </tr>
+            </thead>
+            <tbody id="penaltiesList"></tbody>
+            <tfoot>
+              <tr id="penaltiesTotalsRow" style="font-weight:700; background:var(--bg-page);"></tr>
+            </tfoot>
+          </table>
+        </div>
+        <button class="btn secondary" onclick="addAdjustmentRow('penalty')">+ Добавить штраф</button>
+        <span id="penaltiesStatus" style="font-family:'IBM Plex Mono',monospace; font-size:12px; margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <div class="card admin-panel" id="rulesPanel">
+      <div><a onclick="goHome()" style="font-size:12.5px; color:var(--blue); cursor:pointer; text-decoration:none; border-bottom:1px dotted var(--blue); display:inline-block; margin-bottom:14px;">← Назад к дашборду</a></div>
+      <h2 class="section-title" style="margin-bottom:16px;">📋 Правила доступа</h2>
+      <div class="config-body">
+        <div class="scope-note">
+          ℹ️ Здесь показано содержимое файла <code>RULES.md</code> напрямую с сервера — всегда
+          актуальная информация, без риска расхождения с самим файлом.
+        </div>
+        <div id="rulesContent" class="markdown-content" style="margin-top:16px;">Загрузка...</div>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">Обзор</button>
+      <button class="tab-btn" data-tab="categories">Категории</button>
+      <button class="tab-btn" data-tab="cashflow">Денежный поток</button>
+      <button class="tab-btn" data-tab="taxes">Налоги</button>
+      <button class="tab-btn" data-tab="all">Все операции</button>
+      <button class="tab-btn" data-tab="attendance">Табель посещаемости</button>
+      <button class="tab-btn" data-tab="salary">ЗП</button>
+      <button class="tab-btn" data-tab="bonuses">Премии</button>
+      <button class="tab-btn" data-tab="penalties">Штрафы</button>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: ОБЗОР ==================== -->
+    <div class="tab-panel active" id="tab-overview">
+      <div class="section-head" style="margin-top:20px;">
+        <h2 class="section-title">Обзор</h2>
+        <select class="org-selector-sync header-org-select"></select>
+      </div>
+      <div class="scope-note" id="overviewAllOrgsNote" style="display:none;">
+        ℹ️ Выбрано "Все компании" — показан только общий расход. Для просмотра бюджета, остатка,
+        прогноза и рисков превышения выберите конкретную компанию вверху.
+      </div>
+      <section style="margin-top:20px;">
+        <div class="kpi-row">
+          <div class="card kpi-card"><div class="label">Доход в этом месяце</div><div class="value green" id="kpiIncome">—</div></div>
+          <div class="card kpi-card"><div class="label">Расход в этом месяце</div><div class="value red" id="kpiTotal">—</div></div>
+          <div class="card kpi-card"><div class="label">Итого (прибыль)</div><div class="value" id="kpiNet">—</div></div>
+          <div class="card kpi-card" id="kpiRemainingCard"><div class="label">Осталось от бюджета</div><div class="value" id="kpiRemaining">—</div></div>
+          <div class="card kpi-card"><div class="label">Средний расход в день</div><div class="value" id="kpiAvg">—</div></div>
+          <div class="card kpi-card" id="kpiProjectedCard"><div class="label">Прогноз на конец месяца</div><div class="value" id="kpiProjected">—</div><div class="note" id="kpiProjectedNote"></div></div>
+        </div>
+      </section>
+
+      <section id="alertsSection" style="display:none;">
+        <div class="section-head"><h2 class="section-title">Риски и превышения</h2></div>
+        <div id="alertsList"></div>
+      </section>
+
+      <section id="catBudgetSection">
+        <div class="split-row">
+          <div class="card">
+            <div class="section-head"><h2 class="section-title">Расходы по категориям</h2></div>
+            <div id="catRows"><div class="empty-state">Нет данных за этот месяц</div></div>
+          </div>
+          <div class="card">
+            <div class="section-head"><h2 class="section-title">Динамика доходов и расходов по дням</h2></div>
+            <canvas id="trendChart" height="220"></canvas>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: КАТЕГОРИИ ==================== -->
+    <div class="tab-panel" id="tab-categories">
+      <div class="section-head" style="margin-top:20px;">
+        <h2 class="section-title">Категории</h2>
+        <select class="org-selector-sync header-org-select"></select>
+      </div>
+      <div class="scope-note" id="categoriesAllOrgsNote" style="display:none;">
+        ℹ️ "Все компании": показаны только доли категорий. План vs Факт и % от лимита
+        доступны при выборе конкретной компании (у каждой свои лимиты).
+      </div>
+      <section style="margin-top:20px;">
+        <div style="margin:0 0 16px; display:flex; gap:8px;">
+          <button class="cattype-btn active" data-cattype="expense">Расходы</button>
+          <button class="cattype-btn" data-cattype="income">Доходы</button>
+        </div>
+        <div class="split-row">
+          <div class="card" style="flex:1 1 320px;">
+            <div class="section-head"><h2 class="section-title" id="pieChartTitle">Доли категорий (расходы, месяц)</h2></div>
+            <canvas id="pieChart" height="260"></canvas>
+          </div>
+          <div class="card" style="flex:1 1 420px;" id="budgetBarCard">
+            <div class="section-head"><h2 class="section-title">План vs Факт по категориям</h2></div>
+            <canvas id="budgetBarChart" height="260"></canvas>
+          </div>
+        </div>
+      </section>
+      <section>
+        <div class="card" style="padding:22px;">
+          <div class="section-head"><h2 class="section-title" id="catDetailTitle">Подробно по категориям (расходы)</h2></div>
+          <div id="catRowsDetailed"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: CASH FLOW ==================== -->
+    <div class="tab-panel" id="tab-cashflow">
+      <div class="section-head" style="margin-top:20px;">
+        <h2 class="section-title">Денежный поток</h2>
+        <select class="org-selector-sync header-org-select"></select>
+      </div>
+      <section style="margin-top:4px;">
+        <div class="kpi-row">
+          <div class="card kpi-card"><div class="label">Доход за месяц</div><div class="value green" id="kpiIncome">—</div></div>
+          <div class="card kpi-card"><div class="label">Расход за месяц</div><div class="value red" id="kpiExpense">—</div></div>
+          <div class="card kpi-card"><div class="label">Чистая прибыль</div><div class="value" id="kpiNet">—</div></div>
+          <div class="card kpi-card"><div class="label">Текущий баланс</div><div class="value" id="kpiBalance">—</div><div class="note">старт + всё время учёта</div></div>
+        </div>
+      </section>
+      <section>
+        <div class="card" style="padding:22px;">
+          <div class="section-head"><h2 class="section-title">Доход vs Расход по дням</h2></div>
+          <canvas id="cashflowBarChart" height="230"></canvas>
+        </div>
+      </section>
+      <section>
+        <div class="card" style="padding:22px;">
+          <div class="section-head"><h2 class="section-title">Накопительный баланс</h2></div>
+          <canvas id="balanceLineChart" height="230"></canvas>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: НАЛОГИ ==================== -->
+    <div class="tab-panel" id="tab-taxes">
+      <section style="margin-top:20px;">
+        <div class="card" style="padding:22px;">
+          <div class="section-head">
+            <h2 class="section-title">Расчёт налоговой нагрузки</h2>
+            <select id="taxOrgSelector" style="font-family:'Inter',sans-serif; font-size:13px; padding:8px 11px; border:1px solid var(--border); border-radius:8px;"></select>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:20px;">
+            <button class="period-btn active" data-period="month">Этот месяц</button>
+            <button class="period-btn" data-period="quarter">Этот квартал</button>
+            <button class="period-btn" data-period="year">Этот год</button>
+          </div>
+          <div id="taxResultBox">
+            <div class="empty-state">Выберите организацию и период</div>
+          </div>
+          <div class="tax-disclaimer">
+            ⚠️ Это ориентировочный расчёт для планирования, а не официальная налоговая декларация.
+            Для точных сумм и подачи отчётности сверяйтесь с бухгалтером или налоговым консультантом —
+            особенно на ОСНО, где расчёт зависит от множества вычетов и деталей учёта.
+          </div>
+        </div>
+      </section>
+      <section>
+        <div class="card" style="padding:22px;">
+          <div class="section-head"><h2 class="section-title">📅 Календарь отчётности и оплаты</h2></div>
+          <div id="taxCalendarBox"><div class="empty-state">Выберите организацию</div></div>
+          <div class="tax-disclaimer">
+            ⚠️ Типовые статутные сроки из НК РФ (28-е/25-е число и т.д.). Могут сдвигаться при
+            переносе на выходные дни и меняться законодательно — сверяйте на nalog.ru или с бухгалтером.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== ВКЛАДКА: ВСЕ ОПЕРАЦИИ ==================== -->
+    <div class="tab-panel" id="tab-all">
+      <section style="margin-top:20px;">
+        <div class="card table-card">
+          <div class="section-head">
+            <h2 class="section-title">Все операции</h2>
+            <button class="btn" onclick="exportToExcel()">⬇ Скачать в Excel</button>
+          </div>
+          <div class="flow-summary" id="flowSummary"></div>
+          <div class="filters-row">
+            <select class="org-selector-sync"></select>
+            <select id="filterType">
+              <option value="">Все типы</option>
+              <option value="expense">Расход</option>
+              <option value="income">Доход</option>
+            </select>
+            <select id="filterCategory"><option value="">Все категории</option></select>
+            <input type="date" id="filterFrom">
+            <input type="date" id="filterTo">
+            <input type="text" id="filterSearch" placeholder="Поиск по описанию...">
+          </div>
+          <table>
+            <thead><tr><th style="width:36px;">№</th><th>Дата</th><th>Организация</th><th>Тип</th><th>Категория</th><th class="num">Сумма</th><th>Описание</th><th>Сотрудник</th><th>Период</th><th>Статус</th><th>Ответственный</th><th></th></tr></thead>
+            <tbody id="allTxBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+
+    </main>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+  let records = [];
+  let budgetLimits = {};
+  let startingBalance = 0;
+  let charts = {};
+  let currentCatType = 'expense';
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  }
+  applyTheme(localStorage.getItem('theme') || 'light');
+
+  let organizations = [];
+  let employeeNameById = {};
+  let employeeCountByOrg = {};
+  let bankAccounts = [];
+  let availableRegimes = [];
+  let selectedOrgId = ''; // '' = все компании
+  let taxPeriod = 'month';
+
+  // ==================== ОРГАНИЗАЦИИ ====================
+  async function loadOrganizations() {
+    const res = await fetch('/api/organizations');
+    const data = await res.json();
+    organizations = data.organizations;
+    availableRegimes = data.availableRegimes;
+    refreshOrgReferences();
+    renderOrgsList();
+  }
+
+  // Обновляет всё, что ЗАВИСИТ от списка организаций (селекторы + сводная
+  // таблица), но НЕ трогает форму редактирования — чтобы не терять
+  // несохранённые черновые строки при добавлении нескольких компаний подряд.
+  function refreshOrgReferences() {
+    const optionsHtml = organizations.map(o => `<option value="${o.id}">${orgLabel(o)}</option>`).join('');
+    document.querySelectorAll('.org-selector-sync').forEach(sel => {
+      sel.innerHTML = '<option value="">Все компании</option>' + optionsHtml;
+      sel.value = selectedOrgId;
+    });
+
+    // Самостоятельные селекторы (не зависят от глобального фильтра "Все компании" —
+    // всегда указывают на конкретную организацию, как на вкладке "Налоги")
+    ['taxOrgSelector', 'bankOrgSelector', 'cardOrgSelector', 'orgEditSelector', 'employeeOrgSelector', 'attendanceOrgSelector', 'customerOrgSelector', 'supplierOrgSelector'].forEach(id => {
+      const sel = document.getElementById(id);
+      const prevValue = sel.value;
+      sel.innerHTML = optionsHtml;
+      if (prevValue && organizations.some(o => String(o.id) === prevValue)) sel.value = prevValue;
+    });
+
+    document.getElementById('bankAccountsNoOrgNote').style.display = organizations.length ? 'none' : '';
+    document.getElementById('addBankAccountBtn').style.display = organizations.length ? '' : 'none';
+
+    renderOrgsSummary();
+  }
+
+  function renderOrgsSummary() {
+    const el = document.getElementById('orgsSummary');
+    if (!organizations.length) {
+      el.innerHTML = '<div class="empty-state">Пока нет ни одной организации</div>';
+      return;
+    }
+    el.innerHTML = `
+      <table class="orgs-summary-table">
+        <thead><tr><th style="width:36px;">№</th><th>Форма</th><th>Название</th><th>ИНН</th><th>Налоговый режим</th><th>Сотрудников</th></tr></thead>
+        <tbody>
+          ${organizations.map((o, idx) => `
+            <tr>
+              <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+              <td><span class="org-tag">${o.legal_form}</span></td>
+              <td><b>${o.name}</b></td>
+              <td>${o.inn || '—'}</td>
+              <td>${o.tax_regime}</td>
+              <td>${employeeCountByOrg[o.id] ?? '—'}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function updateAddOrgButtonVisibility() {
+    const showAdd = !selectedOrgId; // доступно только в режиме "Все компании"
+    document.getElementById('addOrgBtn').style.display = showAdd ? '' : 'none';
+    document.getElementById('addOrgHint').style.display = showAdd ? 'none' : '';
+  }
+
+  async function handleOrgSelectorChange(e) {
+    selectedOrgId = e.target.value;
+    document.querySelectorAll('.org-selector-sync').forEach(sel => { sel.value = selectedOrgId; });
+    updateAddOrgButtonVisibility();
+    await loadBudgetLimits();
+    renderAll();
+  }
+  document.querySelectorAll('.org-selector-sync').forEach(sel => {
+    sel.addEventListener('change', handleOrgSelectorChange);
+  });
+  document.getElementById('taxOrgSelector').addEventListener('change', () => {
+    loadTaxEstimate();
+    loadTaxCalendar();
+  });
+
+  async function loadBudgetLimits() {
+    const noOrgNote = document.getElementById('limitsNoOrgNote');
+    const limitsContent = document.getElementById('limitsContent');
+    if (!selectedOrgId) {
+      budgetLimits = {};
+      noOrgNote.style.display = '';
+      limitsContent.style.display = 'none';
+      renderLimitsGrid();
+      return;
+    }
+    noOrgNote.style.display = 'none';
+    limitsContent.style.display = '';
+    const res = await fetch('/api/budget-limits?organization_id=' + selectedOrgId);
+    const limitRows = await res.json();
+    budgetLimits = {};
+    limitRows.forEach(l => budgetLimits[l.category] = l.monthly_limit);
+    renderLimitsGrid();
+  }
+
+  document.getElementById('orgEditSelector').addEventListener('change', renderOrgsList);
+
+  function renderOrgsList() {
+    const el = document.getElementById('orgsList');
+    const selectedId = document.getElementById('orgEditSelector').value;
+    const toShow = selectedId ? organizations.filter(o => String(o.id) === String(selectedId)) : organizations;
+    el.innerHTML = toShow.map(o => orgRowHtml(o)).join('');
+  }
+
+  function orgRowHtml(o) {
+    const isNew = o.id === undefined;
+    const idAttr = isNew ? 'new' : o.id;
+    return `
+      <div class="org-row" data-org-id="${idAttr}">
+        <input class="org-name" placeholder="Название" value="${o.name || ''}">
+        <select class="org-legal">
+          <option value="ООО" ${o.legal_form === 'ООО' ? 'selected' : ''}>ООО</option>
+          <option value="ИП" ${o.legal_form === 'ИП' ? 'selected' : ''}>ИП</option>
+        </select>
+        <input class="org-inn" placeholder="ИНН" value="${o.inn || ''}">
+        <select class="org-regime">
+          ${availableRegimes.map(r => `<option value="${r}" ${o.tax_regime === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+        <input class="org-rate" type="number" placeholder="ставка %" value="${o.tax_rate ?? ''}">
+        <input class="org-patent" type="number" placeholder="патент/год ₽" value="${o.patent_cost_yearly ?? ''}">
+        <button class="save-btn" onclick="saveOrgRow(this)">${isNew ? 'Создать' : 'Сохранить'}</button>
+        ${!isNew ? `<button class="del-btn2" onclick="deleteOrgRow(${o.id})">Удалить</button>` : ''}
+      </div>
+      <div class="org-row org-row-requisites" data-org-id-req="${idAttr}">
+        <input class="org-kpp" placeholder="КПП" value="${o.kpp || ''}">
+        <input class="org-ogrn" placeholder="ОГРН/ОГРНИП" value="${o.ogrn || ''}">
+        <input class="org-phone" placeholder="Телефон" value="${o.phone || ''}">
+        <input class="org-contact" placeholder="ФИО контактного лица" value="${o.contact_person || ''}" style="flex:1 1 220px;">
+        <input class="org-legal-addr" placeholder="Юридический адрес" value="${o.legal_address || ''}" style="flex:2 1 260px;">
+        <input class="org-postal-addr" placeholder="Почтовый адрес" value="${o.postal_address || ''}" style="flex:2 1 260px;">
+      </div>
+    `;
+  }
+
+  function addOrgRow() {
+    document.getElementById('orgsList').insertAdjacentHTML('beforeend',
+      orgRowHtml({ name: '', legal_form: 'ООО', tax_regime: availableRegimes[0] }));
+  }
+
+  async function saveOrgRow(btn) {
+    const row = btn.closest('.org-row');
+    const reqRow = row.nextElementSibling; // строка с реквизитами сразу под основной
+    const payload = {
+      name: row.querySelector('.org-name').value.trim(),
+      legal_form: row.querySelector('.org-legal').value,
+      inn: row.querySelector('.org-inn').value.trim(),
+      tax_regime: row.querySelector('.org-regime').value,
+      tax_rate: row.querySelector('.org-rate').value || null,
+      patent_cost_yearly: row.querySelector('.org-patent').value || null,
+      kpp: reqRow.querySelector('.org-kpp').value.trim(),
+      ogrn: reqRow.querySelector('.org-ogrn').value.trim(),
+      phone: reqRow.querySelector('.org-phone').value.trim(),
+      contact_person: reqRow.querySelector('.org-contact').value.trim(),
+      legal_address: reqRow.querySelector('.org-legal-addr').value.trim(),
+      postal_address: reqRow.querySelector('.org-postal-addr').value.trim()
+    };
+    const statusEl = document.getElementById('orgsStatus');
+    if (!payload.name) { statusEl.textContent = 'Укажите название'; statusEl.style.color = 'var(--red)'; return; }
+
+    const orgId = row.dataset.orgId;
+    try {
+      const res = await fetch(orgId === 'new' ? '/api/organizations' : `/api/organizations/${orgId}`, {
+        method: orgId === 'new' ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      // Обновляем справочные данные (список, селекторы, сводную таблицу),
+      // но НЕ трогаем остальные строки формы — чтобы не потерять
+      // ещё не сохранённые черновики других компаний.
+      const listRes = await fetch('/api/organizations');
+      const listData = await listRes.json();
+      organizations = listData.organizations;
+      availableRegimes = listData.availableRegimes;
+      refreshOrgReferences();
+
+      if (orgId === 'new') {
+        const created = organizations.find(o => o.id === data.id);
+        row.dataset.orgId = created.id;
+        row.querySelector('.save-btn').textContent = 'Сохранить';
+        if (!row.querySelector('.del-btn2')) {
+          row.insertAdjacentHTML('beforeend', `<button class="del-btn2" onclick="deleteOrgRow(${created.id})">Удалить</button>`);
+        }
+      }
+
+      statusEl.textContent = '✓ Сохранено'; statusEl.style.color = 'var(--green)';
+      renderAll();
+      updateCardPreview();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteOrgRow(id) {
+    if (!confirm('Удалить организацию?')) return;
+    const statusEl = document.getElementById('orgsStatus');
+    try {
+      const res = await fetch(`/api/organizations/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+
+      const listRes = await fetch('/api/organizations');
+      const listData = await listRes.json();
+      organizations = listData.organizations;
+      availableRegimes = listData.availableRegimes;
+      refreshOrgReferences();
+
+      const row = document.querySelector(`.org-row[data-org-id="${id}"]`);
+      if (row) {
+        const reqRow = row.nextElementSibling;
+        if (reqRow && reqRow.classList.contains('org-row-requisites')) reqRow.remove();
+        row.remove();
+      }
+      if (String(selectedOrgId) === String(id)) { selectedOrgId = ''; }
+      renderAll();
+      updateCardPreview();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  // ==================== БАНКОВСКИЕ СЧЕТА ====================
+
+  document.getElementById('bankOrgSelector').addEventListener('change', loadBankAccounts);
+
+  async function loadBankAccounts() {
+    const orgId = document.getElementById('bankOrgSelector').value;
+    const listEl = document.getElementById('bankAccountsList');
+    const addBtn = document.getElementById('addBankAccountBtn');
+    if (!orgId) {
+      bankAccounts = [];
+      listEl.innerHTML = '';
+      addBtn.style.display = 'none';
+      return;
+    }
+    addBtn.style.display = '';
+    const res = await fetch('/api/bank-accounts?organization_id=' + orgId);
+    bankAccounts = await res.json();
+    renderBankAccountsList();
+  }
+
+  function renderBankAccountsList() {
+    document.getElementById('bankAccountsList').innerHTML = bankAccounts.map((a, idx) => bankAccountRowHtml(a, idx + 1)).join('');
+  }
+
+  function bankAccountRowHtml(a, num) {
+    const isNew = a.id === undefined;
+    const idAttr = isNew ? 'new' : a.id;
+    return `
+      <div class="org-row" data-account-id="${idAttr}">
+        <span style="flex:0 0 24px; color:var(--text-soft); align-self:center; text-align:center;">${num || '—'}</span>
+        <input class="acc-bank-name" placeholder="Название банка" value="${a.bank_name || ''}" style="flex:1 1 200px;">
+        <input class="acc-bik" placeholder="БИК" value="${a.bik || ''}" style="flex:0 1 120px;">
+        <input class="acc-account" placeholder="Расчётный счёт (р/с)" value="${a.account_number || ''}" style="flex:1 1 220px;">
+        <input class="acc-corr" placeholder="Корр. счёт (к/с)" value="${a.corr_account || ''}" style="flex:1 1 220px;">
+        <button class="save-btn" onclick="saveBankAccountRow(this)">${isNew ? 'Создать' : 'Сохранить'}</button>
+        ${!isNew ? `<button class="del-btn2" onclick="deleteBankAccountRow(${a.id})">Удалить</button>` : ''}
+      </div>
+    `;
+  }
+
+  function addBankAccountRow() {
+    if (!document.getElementById('bankOrgSelector').value) return;
+    document.getElementById('bankAccountsList').insertAdjacentHTML('beforeend', bankAccountRowHtml({}));
+  }
+
+  async function saveBankAccountRow(btn) {
+    const row = btn.closest('.org-row');
+    const payload = {
+      organization_id: document.getElementById('bankOrgSelector').value,
+      bank_name: row.querySelector('.acc-bank-name').value.trim(),
+      bik: row.querySelector('.acc-bik').value.trim(),
+      account_number: row.querySelector('.acc-account').value.trim(),
+      corr_account: row.querySelector('.acc-corr').value.trim()
+    };
+    const statusEl = document.getElementById('bankAccountsStatus');
+    if (!payload.bank_name) { statusEl.textContent = 'Укажите название банка'; statusEl.style.color = 'var(--red)'; return; }
+
+    const accId = row.dataset.accountId;
+    try {
+      const res = await fetch(accId === 'new' ? '/api/bank-accounts' : `/api/bank-accounts/${accId}`, {
+        method: accId === 'new' ? 'POST' : 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сохранено'; statusEl.style.color = 'var(--green)';
+      await loadBankAccounts();
+      updateCardPreview();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteBankAccountRow(id) {
+    if (!confirm('Удалить банковский счёт?')) return;
+    await fetch('/api/bank-accounts/' + id, { method: 'DELETE' });
+    await loadBankAccounts();
+    updateCardPreview();
+  }
+
+  async function loadAllEmployeesMap() {
+    employeeNameById = {};
+    employeeCountByOrg = {};
+    for (const org of organizations) {
+      const res = await fetch('/api/employees?organization_id=' + org.id);
+      const data = await res.json();
+      data.employees.forEach(e => { employeeNameById[e.id] = e.full_name; });
+      employeeCountByOrg[org.id] = data.employees.filter(e => e.status === 'active').length;
+    }
+    renderOrgsSummary();
+  }
+
+  // ==================== СОТРУДНИКИ ====================
+
+  document.getElementById('employeeOrgSelector').addEventListener('change', loadEmployeesPanel);
+
+  let currentEmployeesList = [];
+
+  async function loadEmployeesPanel() {
+    const orgId = document.getElementById('employeeOrgSelector').value;
+    const el = document.getElementById('employeesList');
+    if (!orgId) { el.innerHTML = '<div class="empty-state">Сначала создайте организацию</div>'; currentEmployeesList = []; return; }
+    const res = await fetch('/api/employees?organization_id=' + orgId);
+    const data = await res.json();
+    currentEmployeesList = data.employees;
+    renderEmployeesList(data.employees);
+  }
+
+  // ==================== ДОПОЛНИТЕЛЬНЫЙ СОЦ. ПАКЕТ ====================
+
+  // ==================== ЗАКАЗЧИКИ И ПРОДАВЦЫ ====================
+
+  document.getElementById('customerOrgSelector').addEventListener('change', () => loadCounterpartiesList('customer'));
+  document.getElementById('supplierOrgSelector').addEventListener('change', () => loadCounterpartiesList('supplier'));
+
+  const CP_LEGAL_FORM_OPTIONS = ['ООО', 'ИП', 'АО', 'ПАО', 'ЗАО', 'Физ. лицо', 'Другое'];
+  function cpLegalFormOptionsHtml(selected) {
+    return CP_LEGAL_FORM_OPTIONS.map(f => `<option value="${f}" ${f === selected ? 'selected' : ''}>${f}</option>`).join('');
+  }
+
+  const CP_CONFIG = {
+    customer: { orgSelectorId: 'customerOrgSelector', listId: 'customersList', statusId: 'customersStatus', colspan: 10 },
+    supplier: { orgSelectorId: 'supplierOrgSelector', listId: 'suppliersList', statusId: 'suppliersStatus', colspan: 10 }
+  };
+
+  async function loadCounterpartiesList(type) {
+    const cfg = CP_CONFIG[type];
+    const orgId = document.getElementById(cfg.orgSelectorId).value;
+    const el = document.getElementById(cfg.listId);
+    if (!orgId) { el.innerHTML = `<tr><td colspan="${cfg.colspan}" class="empty-state">Сначала выберите компанию</td></tr>`; return; }
+    const res = await fetch(`/api/counterparties?organization_id=${orgId}&type=${type}`);
+    const rows = await res.json();
+    renderCounterpartiesList(type, rows);
+  }
+
+  function renderCounterpartiesList(type, rows) {
+    const cfg = CP_CONFIG[type];
+    const el = document.getElementById(cfg.listId);
+    const label = type === 'customer' ? 'Заказчиков' : 'Продавцов';
+    if (!rows.length) { el.innerHTML = `<tr><td colspan="${cfg.colspan}" class="empty-state">${label} пока нет</td></tr>`; return; }
+    el.innerHTML = rows.map((r, idx) => `
+      <tr class="cp-tr locked" data-cp-id="${r.id}" data-cp-type="${type}">
+        <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+        <td>
+          <select class="cp-legal-form" disabled>
+            <option value="">—</option>
+            ${cpLegalFormOptionsHtml(r.legal_form)}
+          </select>
+        </td>
+        <td><input class="cp-name" value="${r.name}" oninput="capitalizeInput(this)" style="font-weight:700;" readonly></td>
+        <td><input class="cp-inn" value="${r.inn || ''}" readonly></td>
+        <td><input class="cp-contact" value="${r.contact_person || ''}" oninput="capitalizeInput(this)" readonly></td>
+        <td><input class="cp-phone" value="${r.phone || ''}" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)" readonly></td>
+        <td><input class="cp-email" value="${r.email || ''}" readonly></td>
+        <td><input class="cp-address" value="${r.address || ''}" oninput="capitalizeFirstOnly(this)" readonly></td>
+        <td><input class="cp-comment" value="${r.comment || ''}" readonly></td>
+        <td class="emp-actions">
+          <button class="save-btn" onclick="unlockCounterpartyRow(this)">Изменить</button>
+          <button class="contacts-btn" onclick="openContactsModal(${r.id}, '${(r.name || '').replace(/'/g, "\\'")}')">👤 Доп. контакты</button>
+          <button class="del-btn2" onclick="deleteCounterpartyRow(${r.id}, '${type}')">Удалить</button>
+        </td>
+      </tr>
+    `).join('');
+    addTitleTooltips(cfg.listId);
+  }
+
+  function unlockCounterpartyRow(btn) {
+    const row = btn.closest('.cp-tr');
+    const id = row.dataset.cpId;
+    row.classList.remove('locked');
+    row.querySelectorAll('input').forEach(i => i.readOnly = false);
+    row.querySelectorAll('select').forEach(s => s.disabled = false);
+    btn.textContent = 'Сохранить';
+    btn.onclick = () => saveCounterpartyRow(id, btn);
+  }
+
+  function addCounterpartyRow(type) {
+    const cfg = CP_CONFIG[type];
+    const orgId = document.getElementById(cfg.orgSelectorId).value;
+    if (!orgId) { alert('Сначала выберите компанию'); return; }
+    document.getElementById(cfg.listId).insertAdjacentHTML('afterbegin', `
+      <tr class="cp-tr" data-cp-id="new" data-cp-type="${type}">
+        <td style="color:var(--text-soft); text-align:center;">—</td>
+        <td>
+          <select class="cp-legal-form">
+            <option value="">Форма —</option>
+            ${cpLegalFormOptionsHtml()}
+          </select>
+        </td>
+        <td><input class="cp-name" placeholder="Название" oninput="capitalizeInput(this)" style="font-weight:700;"></td>
+        <td><input class="cp-inn" placeholder="ИНН"></td>
+        <td><input class="cp-contact" placeholder="Контактное лицо" oninput="capitalizeInput(this)"></td>
+        <td><input class="cp-phone" placeholder="Телефон" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)"></td>
+        <td><input class="cp-email" placeholder="Email"></td>
+        <td><input class="cp-address" placeholder="Адрес" oninput="capitalizeFirstOnly(this)"></td>
+        <td><input class="cp-comment" placeholder="Комментарий"></td>
+        <td class="emp-actions"><button class="save-btn" onclick="createCounterparty(this, '${type}')">Создать</button></td>
+      </tr>
+    `);
+  }
+
+  async function createCounterparty(btn, type) {
+    const row = btn.closest('.cp-tr');
+    const cfg = CP_CONFIG[type];
+    const orgId = document.getElementById(cfg.orgSelectorId).value;
+    const statusEl = document.getElementById(cfg.statusId);
+    const name = row.querySelector('.cp-name').value.trim();
+    if (!name) { statusEl.textContent = 'Укажите название'; statusEl.style.color = 'var(--red)'; return; }
+    try {
+      const res = await fetch('/api/counterparties', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_id: orgId, type, name,
+          legal_form: row.querySelector('.cp-legal-form').value,
+          inn: row.querySelector('.cp-inn').value.trim(),
+          contact_person: row.querySelector('.cp-contact').value.trim(),
+          phone: row.querySelector('.cp-phone').value.trim(),
+          email: row.querySelector('.cp-email').value.trim(),
+          address: row.querySelector('.cp-address').value.trim(),
+          comment: row.querySelector('.cp-comment').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Добавлено'; statusEl.style.color = 'var(--green)';
+      loadCounterpartiesList(type);
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function saveCounterpartyRow(id, btn) {
+    const row = btn.closest('.cp-tr');
+    const type = row.dataset.cpType;
+    const statusEl = document.getElementById(CP_CONFIG[type].statusId);
+    try {
+      const res = await fetch('/api/counterparties/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: row.querySelector('.cp-name').value.trim(),
+          legal_form: row.querySelector('.cp-legal-form').value,
+          inn: row.querySelector('.cp-inn').value.trim(),
+          contact_person: row.querySelector('.cp-contact').value.trim(),
+          phone: row.querySelector('.cp-phone').value.trim(),
+          email: row.querySelector('.cp-email').value.trim(),
+          address: row.querySelector('.cp-address').value.trim(),
+          comment: row.querySelector('.cp-comment').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сохранено'; statusEl.style.color = 'var(--green)';
+      loadCounterpartiesList(type);
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteCounterpartyRow(id, type) {
+    if (!confirm('Удалить эту запись?')) return;
+    await fetch('/api/counterparties/' + id, { method: 'DELETE' });
+    loadCounterpartiesList(type);
+  }
+
+  // ---- Дополнительные контакты заказчика/продавца ----
+  let currentCpId = null;
+
+  async function openContactsModal(counterpartyId, name) {
+    currentCpId = counterpartyId;
+    document.getElementById('cpContactsTitle').textContent = `Доп. контакты — ${name}`;
+    document.getElementById('cpContactsModal').classList.add('open');
+    await loadCpContacts();
+  }
+
+  function closeContactsModal() {
+    document.getElementById('cpContactsModal').classList.remove('open');
+    currentCpId = null;
+  }
+
+  async function loadCpContacts() {
+    const res = await fetch('/api/counterparty-contacts?counterparty_id=' + currentCpId);
+    const rows = await res.json();
+    renderCpContacts(rows);
+  }
+
+  function renderCpContacts(rows) {
+    const el = document.getElementById('cpContactsList');
+    if (!rows.length) { el.innerHTML = '<tr><td colspan="6" class="empty-state">Контактов пока нет</td></tr>'; return; }
+    el.innerHTML = rows.map(c => `
+      <tr class="cpc-tr locked" data-cpc-id="${c.id}">
+        <td><input class="cpc-name" value="${c.name}" oninput="capitalizeInput(this)" readonly></td>
+        <td><input class="cpc-position" value="${c.position || ''}" oninput="capitalizeInput(this)" readonly></td>
+        <td><input class="cpc-phone" value="${c.phone || ''}" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)" readonly></td>
+        <td><input class="cpc-email" value="${c.email || ''}" readonly></td>
+        <td><input class="cpc-comment" value="${c.comment || ''}" readonly></td>
+        <td class="emp-actions">
+          <button class="save-btn" onclick="unlockCpContactRow(this)">Изменить</button>
+          <button class="del-btn2" onclick="deleteCpContactRow(${c.id})">Удалить</button>
+        </td>
+      </tr>
+    `).join('');
+    addTitleTooltips('cpContactsList');
+  }
+
+  function unlockCpContactRow(btn) {
+    const row = btn.closest('.cpc-tr');
+    const id = row.dataset.cpcId;
+    row.classList.remove('locked');
+    row.querySelectorAll('input').forEach(i => i.readOnly = false);
+    btn.textContent = 'Сохранить';
+    btn.onclick = () => saveCpContactRow(id, btn);
+  }
+
+  function addCpContactRow() {
+    document.getElementById('cpContactsList').insertAdjacentHTML('afterbegin', `
+      <tr class="cpc-tr" data-cpc-id="new">
+        <td><input class="cpc-name" placeholder="ФИО" oninput="capitalizeInput(this)"></td>
+        <td><input class="cpc-position" placeholder="Должность" oninput="capitalizeInput(this)"></td>
+        <td><input class="cpc-phone" placeholder="Телефон" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)"></td>
+        <td><input class="cpc-email" placeholder="Email"></td>
+        <td><input class="cpc-comment" placeholder="Комментарий"></td>
+        <td class="emp-actions"><button class="save-btn" onclick="createCpContact(this)">Создать</button></td>
+      </tr>
+    `);
+  }
+
+  async function createCpContact(btn) {
+    const row = btn.closest('.cpc-tr');
+    const name = row.querySelector('.cpc-name').value.trim();
+    if (!name) { alert('Укажите ФИО'); return; }
+    await fetch('/api/counterparty-contacts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        counterparty_id: currentCpId, name,
+        position: row.querySelector('.cpc-position').value.trim(),
+        phone: row.querySelector('.cpc-phone').value.trim(),
+        email: row.querySelector('.cpc-email').value.trim(),
+        comment: row.querySelector('.cpc-comment').value.trim()
+      })
+    });
+    loadCpContacts();
+  }
+
+  async function saveCpContactRow(id, btn) {
+    const row = btn.closest('.cpc-tr');
+    await fetch('/api/counterparty-contacts/' + id, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: row.querySelector('.cpc-name').value.trim(),
+        position: row.querySelector('.cpc-position').value.trim(),
+        phone: row.querySelector('.cpc-phone').value.trim(),
+        email: row.querySelector('.cpc-email').value.trim(),
+        comment: row.querySelector('.cpc-comment').value.trim()
+      })
+    });
+    loadCpContacts();
+  }
+
+  async function deleteCpContactRow(id) {
+    if (!confirm('Удалить этот контакт?')) return;
+    await fetch('/api/counterparty-contacts/' + id, { method: 'DELETE' });
+    loadCpContacts();
+  }
+
+  async function loadSocialPackageList() {
+    const res = await fetch('/api/social-package');
+    const rows = await res.json();
+    renderSocialPackageList(rows);
+  }
+
+  function renderSocialPackageList(rows) {
+    const el = document.getElementById('socialPackageList');
+    if (!rows.length) { el.innerHTML = '<tr><td colspan="6" class="empty-state">Записей пока нет</td></tr>'; return; }
+    el.innerHTML = rows.map((r, idx) => `
+      <tr class="sp-tr locked" data-sp-id="${r.id}">
+        <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+        <td><input type="date" class="sp-date" value="${r.date}" readonly></td>
+        <td><input class="sp-reason" value="${r.reason || ''}" oninput="capitalizeInput(this)" readonly></td>
+        <td><input class="sp-amount" type="text" inputmode="numeric" value="${(r.amount || 0).toLocaleString('ru-RU')}" oninput="formatSalaryInput(this)" readonly></td>
+        <td><input class="sp-comment" value="${r.comment || ''}" readonly></td>
+        <td class="emp-actions">
+          <button class="save-btn" onclick="unlockSocialPackageRow(this)">Изменить</button>
+          <button class="del-btn2" onclick="deleteSocialPackageRow(${r.id})">Удалить</button>
+        </td>
+      </tr>
+    `).join('');
+    addTitleTooltips('socialPackageList');
+  }
+
+  function unlockSocialPackageRow(btn) {
+    const row = btn.closest('.sp-tr');
+    const id = row.dataset.spId;
+    row.classList.remove('locked');
+    row.querySelectorAll('input').forEach(i => i.readOnly = false);
+    btn.textContent = 'Сохранить';
+    btn.onclick = () => saveSocialPackageRow(id, btn);
+  }
+
+  function addSocialPackageRow() {
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById('socialPackageList').insertAdjacentHTML('afterbegin', `
+      <tr class="sp-tr" data-sp-id="new">
+        <td style="color:var(--text-soft); text-align:center;">—</td>
+        <td><input type="date" class="sp-date" value="${today}"></td>
+        <td><input class="sp-reason" placeholder="Причина выплат" oninput="capitalizeInput(this)"></td>
+        <td><input class="sp-amount" type="text" inputmode="numeric" placeholder="0" oninput="formatSalaryInput(this)"></td>
+        <td><input class="sp-comment" placeholder="Комментарий"></td>
+        <td class="emp-actions"><button class="save-btn" onclick="createSocialPackage(this)">Создать</button></td>
+      </tr>
+    `);
+  }
+
+  async function createSocialPackage(btn) {
+    const row = btn.closest('.sp-tr');
+    const statusEl = document.getElementById('socialPackageStatus');
+    const amount = parseSalaryInput(row.querySelector('.sp-amount').value);
+    if (!amount) { statusEl.textContent = 'Укажите сумму'; statusEl.style.color = 'var(--red)'; return; }
+    try {
+      const res = await fetch('/api/social-package', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: row.querySelector('.sp-date').value,
+          reason: row.querySelector('.sp-reason').value.trim(),
+          amount,
+          comment: row.querySelector('.sp-comment').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Добавлено'; statusEl.style.color = 'var(--green)';
+      loadSocialPackageList();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function saveSocialPackageRow(id, btn) {
+    const row = btn.closest('.sp-tr');
+    const statusEl = document.getElementById('socialPackageStatus');
+    try {
+      const res = await fetch('/api/social-package/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: row.querySelector('.sp-date').value,
+          reason: row.querySelector('.sp-reason').value.trim(),
+          amount: parseSalaryInput(row.querySelector('.sp-amount').value),
+          comment: row.querySelector('.sp-comment').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сохранено'; statusEl.style.color = 'var(--green)';
+      loadSocialPackageList();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteSocialPackageRow(id) {
+    if (!confirm('Удалить эту запись?')) return;
+    await fetch('/api/social-package/' + id, { method: 'DELETE' });
+    loadSocialPackageList();
+  }
+
+  const EMP_STATUS_LABELS = { active: 'Официальный', temporary: 'Временный', unofficial: 'Неофициальный', terminated: 'Уволен' };
+
+  const EMP_POSITION_OPTIONS = ['Инженер', 'ст. Инженер', 'ДП', 'Рабочий', 'ОД', 'ГБ', 'ДК', 'Менеджер', 'ст. Менеджер', 'Юрист', 'ст. Юрист', 'Руководитель Отдела'];
+  const EMP_DEPARTMENT_OPTIONS = ['Строительный', 'Технический', 'Делопроизводство', 'Бухгалтерия', 'Операционный', 'Руководители'];
+
+  function empPositionOptionsHtml(selected) {
+    return EMP_POSITION_OPTIONS.map(p => `<option value="${p}" ${p === selected ? 'selected' : ''}>${p}</option>`).join('');
+  }
+  function empDepartmentOptionsHtml(selected) {
+    return EMP_DEPARTMENT_OPTIONS.map(d => `<option value="${d}" ${d === selected ? 'selected' : ''}>${d}</option>`).join('');
+  }
+
+
+  function applyExcelNumberFormat(ws, colLetters, rowCount) {
+    for (let r = 2; r <= rowCount + 1; r++) {
+      colLetters.forEach(col => {
+        const cell = ws[col + r];
+        if (cell && typeof cell.v === 'number') cell.z = '#,##0';
+      });
+    }
+  }
+
+  function exportEmployeesToExcel() {
+    if (!currentEmployeesList.length) { alert('Нет сотрудников для выгрузки'); return; }
+    const orgId = document.getElementById('employeeOrgSelector').value;
+    const org = organizations.find(o => String(o.id) === String(orgId));
+
+    const activeCount = currentEmployeesList.filter(e => e.status === 'active').length;
+    const temporaryCount = currentEmployeesList.filter(e => e.status === 'temporary').length;
+    const unofficialCount = currentEmployeesList.filter(e => e.status === 'unofficial').length;
+    const terminatedCount = currentEmployeesList.filter(e => e.status === 'terminated').length;
+
+    const summaryRows = [`Всего сотрудников: ${currentEmployeesList.length}`];
+    if (activeCount) summaryRows.push(`Официальных: ${activeCount}`);
+    if (temporaryCount) summaryRows.push(`Временных: ${temporaryCount}`);
+    if (unofficialCount) summaryRows.push(`Неофициальных: ${unofficialCount}`);
+    if (terminatedCount) summaryRows.push(`Уволено: ${terminatedCount}`);
+
+    const header = ['ФИО', 'Должность', 'Подразделение', 'Статус', 'Раб. телефон', 'Личный телефон', 'Раб. почта', 'Telegram'];
+    const dataRows = currentEmployeesList.map(emp => [
+      emp.full_name, emp.position || '', emp.department || '', EMP_STATUS_LABELS[emp.status] || emp.status,
+      emp.phone_work || '', emp.phone_personal || '', emp.email_work || '', emp.telegram_username || ''
+    ]);
+    const colWidths = [{wch:24},{wch:20},{wch:16},{wch:14},{wch:16},{wch:16},{wch:22},{wch:16}];
+    const mergeCols = 7;
+
+    const aoa = [
+      ...summaryRows.map(line => [line]),
+      [],
+      header,
+      ...dataRows
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = colWidths;
+    ws['!merges'] = summaryRows.map((_, i) => ({ s: { r: i, c: 0 }, e: { r: i, c: mergeCols } }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Сотрудники');
+    const orgLabel = org ? org.name.replace(/[^a-zA-Zа-яА-Я0-9]+/g, '_') : 'Сотрудники';
+    XLSX.writeFile(wb, `${orgLabel}_список_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  // ==================== ВКЛАДКА "ЗП" ====================
+
+  document.getElementById('salaryOrgSelector').addEventListener('change', loadSalaryTab);
+  let currentSalaryList = [];
+
+  async function loadSalaryTab() {
+    const orgId = document.getElementById('salaryOrgSelector').value;
+    const el = document.getElementById('salaryList');
+    const totalsRow = document.getElementById('salaryTotalsRow');
+    if (!orgId) { el.innerHTML = '<tr><td colspan="7" class="empty-state">Сначала выберите компанию</td></tr>'; totalsRow.innerHTML = ''; return; }
+    const res = await fetch('/api/employees?organization_id=' + orgId);
+    const data = await res.json();
+    currentSalaryList = data.employees.filter(e => e.status !== 'terminated');
+    renderSalaryList(currentSalaryList);
+  }
+
+  function renderSalaryList(employees) {
+    const el = document.getElementById('salaryList');
+    const totalsRow = document.getElementById('salaryTotalsRow');
+    if (!employees.length) { el.innerHTML = '<tr><td colspan="7" class="empty-state">Сотрудников пока нет</td></tr>'; totalsRow.innerHTML = ''; return; }
+
+    const totalOfficial = employees.reduce((s, e) => s + (e.official_salary || 0), 0);
+    const totalUnofficial = employees.reduce((s, e) => s + (e.unofficial_salary || 0), 0);
+    totalsRow.innerHTML = `
+      <td colspan="3">Итого по компании</td>
+      <td class="emp-total-cell">${fmt(totalOfficial)}</td>
+      <td class="emp-total-cell">${fmt(totalUnofficial)}</td>
+      <td class="emp-total-cell">${fmt(totalOfficial + totalUnofficial)}</td>
+      <td></td>
+    `;
+
+    el.innerHTML = employees.map((emp, idx) => {
+      const official = emp.official_salary || 0;
+      const unofficial = emp.unofficial_salary || 0;
+      return `
+      <tr class="sal-tr locked" data-emp-id="${emp.id}">
+        <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+        <td style="font-weight:700;">${emp.full_name}</td>
+        <td>${EMP_STATUS_LABELS[emp.status] || emp.status}</td>
+        <td><input class="sal-official" type="text" inputmode="numeric" value="${official ? official.toLocaleString('ru-RU') : ''}" placeholder="0" oninput="formatSalaryInput(this); updateSalaryRowTotal(this);" ${(emp.status === 'temporary' || emp.status === 'unofficial') ? 'disabled' : ''} readonly></td>
+        <td><input class="sal-unofficial" type="text" inputmode="numeric" value="${unofficial ? unofficial.toLocaleString('ru-RU') : ''}" placeholder="0" oninput="formatSalaryInput(this); updateSalaryRowTotal(this);" readonly></td>
+        <td class="emp-total-cell sal-row-total">${fmt(official + unofficial)}</td>
+        <td class="emp-actions">
+          <button class="save-btn" onclick="unlockSalaryRow(this)">Изменить</button>
+        </td>
+      </tr>
+    `;
+    }).join('');
+    addTitleTooltips('salaryList');
+  }
+
+  function unlockSalaryRow(btn) {
+    const row = btn.closest('.sal-tr');
+    const id = row.dataset.empId;
+    row.classList.remove('locked');
+    row.querySelectorAll('input').forEach(i => i.readOnly = false);
+    btn.textContent = 'Сохранить';
+    btn.onclick = () => saveSalaryRow(id, btn);
+  }
+
+  function updateSalaryRowTotal(input) {
+    const row = input.closest('.sal-tr');
+    const official = parseSalaryInput(row.querySelector('.sal-official').value);
+    const unofficial = parseSalaryInput(row.querySelector('.sal-unofficial').value);
+    row.querySelector('.sal-row-total').textContent = fmt(official + unofficial);
+  }
+
+  async function saveSalaryRow(id, btn) {
+    const row = btn.closest('.sal-tr');
+    const statusEl = document.getElementById('salaryStatus');
+    try {
+      const res = await fetch('/api/employees/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          official_salary: parseSalaryInput(row.querySelector('.sal-official').value),
+          unofficial_salary: parseSalaryInput(row.querySelector('.sal-unofficial').value)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сохранено (уведомление ушло в Telegram, если ЗП менялась)'; statusEl.style.color = 'var(--green)';
+      loadSalaryTab();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  function exportSalaryToExcel() {
+    if (!currentSalaryList.length) { alert('Нет данных для выгрузки'); return; }
+    const orgId = document.getElementById('salaryOrgSelector').value;
+    const org = organizations.find(o => String(o.id) === String(orgId));
+
+    const totalOfficial = currentSalaryList.reduce((s, e) => s + (e.official_salary || 0), 0);
+    const totalUnofficial = currentSalaryList.reduce((s, e) => s + (e.unofficial_salary || 0), 0);
+
+    const aoa = [
+      ['ФИО', 'Статус', 'Официальная ЗП', 'Неофициальная ЗП', 'Итого'],
+      ...currentSalaryList.map(emp => [
+        emp.full_name, EMP_STATUS_LABELS[emp.status] || emp.status, emp.official_salary || 0, emp.unofficial_salary || 0,
+        (emp.official_salary || 0) + (emp.unofficial_salary || 0)
+      ]),
+      [],
+      ['Итого по компании', '', totalOfficial, totalUnofficial, totalOfficial + totalUnofficial]
+    ];
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = [{wch:24},{wch:14},{wch:16},{wch:16},{wch:12}];
+    const dataStartRow = 2, dataEndRow = dataStartRow + currentSalaryList.length - 1, totalsRow = aoa.length;
+    ['C', 'D', 'E'].forEach(col => {
+      for (let r = dataStartRow; r <= dataEndRow; r++) {
+        const cell = ws[col + r];
+        if (cell && typeof cell.v === 'number') cell.z = '#,##0';
+      }
+      const totalsCell = ws[col + totalsRow];
+      if (totalsCell && typeof totalsCell.v === 'number') totalsCell.z = '#,##0';
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'ЗП');
+    const orgLabel = org ? org.name.replace(/[^a-zA-Zа-яА-Я0-9]+/g, '_') : 'ЗП';
+    XLSX.writeFile(wb, `${orgLabel}_ЗП_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  // ==================== ПРЕМИИ И ШТРАФЫ ====================
+
+  const ADJ_CONFIG = {
+    bonus: { orgSelectorId: 'bonusOrgSelector', listId: 'bonusesList', statusId: 'bonusesStatus', totalsRowId: 'bonusesTotalsRow', label: 'Премия' },
+    penalty: { orgSelectorId: 'penaltyOrgSelector', listId: 'penaltiesList', statusId: 'penaltiesStatus', totalsRowId: 'penaltiesTotalsRow', label: 'Штраф' }
+  };
+  let adjustmentEmployees = { bonus: [], penalty: [] };
+
+  document.getElementById('bonusOrgSelector').addEventListener('change', () => loadAdjustmentsList('bonus'));
+  document.getElementById('penaltyOrgSelector').addEventListener('change', () => loadAdjustmentsList('penalty'));
+
+  async function loadAdjustmentsList(type) {
+    const cfg = ADJ_CONFIG[type];
+    const orgId = document.getElementById(cfg.orgSelectorId).value;
+    const el = document.getElementById(cfg.listId);
+    if (!orgId) {
+      el.innerHTML = '<tr><td colspan="7" class="empty-state">Сначала выберите компанию</td></tr>';
+      document.getElementById(cfg.totalsRowId).innerHTML = '';
+      return;
+    }
+
+    const empRes = await fetch('/api/employees?organization_id=' + orgId);
+    const empData = await empRes.json();
+    adjustmentEmployees[type] = empData.employees;
+
+    const res = await fetch(`/api/payroll-adjustments?organization_id=${orgId}&type=${type}`);
+    const rows = await res.json();
+    renderAdjustmentsList(type, rows);
+  }
+
+  function adjustmentEmployeeOptionsHtml(type, selectedId) {
+    return adjustmentEmployees[type].map(e =>
+      `<option value="${e.id}" ${String(e.id) === String(selectedId) ? 'selected' : ''}>${e.full_name}</option>`
+    ).join('');
+  }
+
+  function renderAdjustmentsList(type, rows) {
+    const cfg = ADJ_CONFIG[type];
+    const el = document.getElementById(cfg.listId);
+    const totalsRow = document.getElementById(cfg.totalsRowId);
+    if (!rows.length) {
+      el.innerHTML = `<tr><td colspan="7" class="empty-state">${cfg.label === 'Премия' ? 'Премий' : 'Штрафов'} пока нет</td></tr>`;
+      totalsRow.innerHTML = '';
+      return;
+    }
+    const total = rows.reduce((s, r) => s + (r.amount || 0), 0);
+    totalsRow.innerHTML = `
+      <td colspan="4">Итого по компании</td>
+      <td class="emp-total-cell">${fmt(total)}</td>
+      <td colspan="2"></td>
+    `;
+    el.innerHTML = rows.map((r, idx) => `
+      <tr class="adj-tr locked" data-adj-id="${r.id}" data-adj-type="${type}">
+        <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+        <td><input type="date" class="adj-date" value="${r.date}" readonly></td>
+        <td><select class="adj-employee" disabled>${adjustmentEmployeeOptionsHtml(type, r.employee_id)}</select></td>
+        <td><input class="adj-reason" value="${r.reason || ''}" oninput="capitalizeInput(this)" readonly></td>
+        <td><input class="adj-amount" type="text" inputmode="numeric" value="${(r.amount || 0).toLocaleString('ru-RU')}" oninput="formatSalaryInput(this)" readonly></td>
+        <td><input class="adj-comment" value="${r.comment || ''}" readonly></td>
+        <td class="emp-actions">
+          <button class="save-btn" onclick="unlockAdjustmentRow(this)">Изменить</button>
+          <button class="del-btn2" onclick="deleteAdjustmentRow(${r.id}, '${type}')">Удалить</button>
+        </td>
+      </tr>
+    `).join('');
+    addTitleTooltips(cfg.listId);
+  }
+
+  function unlockAdjustmentRow(btn) {
+    const row = btn.closest('.adj-tr');
+    const id = row.dataset.adjId;
+    row.classList.remove('locked');
+    row.querySelectorAll('input').forEach(i => i.readOnly = false);
+    btn.textContent = 'Сохранить';
+    btn.onclick = () => saveAdjustmentRow(id, btn);
+  }
+
+  function addAdjustmentRow(type) {
+    const cfg = ADJ_CONFIG[type];
+    const orgId = document.getElementById(cfg.orgSelectorId).value;
+    if (!orgId) { alert('Сначала выберите компанию'); return; }
+    if (!adjustmentEmployees[type].length) { alert('В этой компании пока нет сотрудников'); return; }
+    const today = new Date().toISOString().slice(0, 10);
+    document.getElementById(cfg.listId).insertAdjacentHTML('afterbegin', `
+      <tr class="adj-tr" data-adj-id="new" data-adj-type="${type}">
+        <td style="color:var(--text-soft); text-align:center;">—</td>
+        <td><input type="date" class="adj-date" value="${today}"></td>
+        <td><select class="adj-employee">${adjustmentEmployeeOptionsHtml(type)}</select></td>
+        <td><input class="adj-reason" placeholder="Причина" oninput="capitalizeInput(this)"></td>
+        <td><input class="adj-amount" type="text" inputmode="numeric" placeholder="0" oninput="formatSalaryInput(this)"></td>
+        <td><input class="adj-comment" placeholder="Комментарий"></td>
+        <td class="emp-actions"><button class="save-btn" onclick="createAdjustment(this, '${type}')">Создать</button></td>
+      </tr>
+    `);
+  }
+
+  async function createAdjustment(btn, type) {
+    const row = btn.closest('.adj-tr');
+    const statusEl = document.getElementById(ADJ_CONFIG[type].statusId);
+    const amount = parseSalaryInput(row.querySelector('.adj-amount').value);
+    if (!amount) { statusEl.textContent = 'Укажите сумму'; statusEl.style.color = 'var(--red)'; return; }
+    try {
+      const res = await fetch('/api/payroll-adjustments', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employee_id: row.querySelector('.adj-employee').value,
+          type,
+          date: row.querySelector('.adj-date').value,
+          reason: row.querySelector('.adj-reason').value.trim(),
+          amount,
+          comment: row.querySelector('.adj-comment').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Добавлено'; statusEl.style.color = 'var(--green)';
+      loadAdjustmentsList(type);
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function saveAdjustmentRow(id, btn) {
+    const row = btn.closest('.adj-tr');
+    const type = row.dataset.adjType;
+    const statusEl = document.getElementById(ADJ_CONFIG[type].statusId);
+    try {
+      const res = await fetch('/api/payroll-adjustments/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: row.querySelector('.adj-date').value,
+          reason: row.querySelector('.adj-reason').value.trim(),
+          amount: parseSalaryInput(row.querySelector('.adj-amount').value),
+          comment: row.querySelector('.adj-comment').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сохранено'; statusEl.style.color = 'var(--green)';
+      loadAdjustmentsList(type);
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteAdjustmentRow(id, type) {
+    if (!confirm('Удалить эту запись?')) return;
+    await fetch('/api/payroll-adjustments/' + id, { method: 'DELETE' });
+    loadAdjustmentsList(type);
+  }
+
+  // ==================== ТАБЕЛЬ ПОСЕЩАЕМОСТИ ====================
+
+  document.getElementById('attendanceOrgSelector').addEventListener('change', loadAttendanceGrid);
+  document.getElementById('attendanceMonth').addEventListener('change', loadAttendanceGrid);
+
+  function initAttendanceMonth() {
+    const monthInput = document.getElementById('attendanceMonth');
+    if (!monthInput.value) {
+      const now = new Date();
+      monthInput.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }
+  }
+
+  const MONTH_NAMES_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const DOW_NAMES_RU = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+
+  async function loadAttendanceGrid() {
+    const orgId = document.getElementById('attendanceOrgSelector').value;
+    const month = document.getElementById('attendanceMonth').value;
+    const gridEl = document.getElementById('attendanceGrid');
+    if (!orgId || !month) { gridEl.innerHTML = '<div class="empty-state">Выберите компанию и месяц</div>'; return; }
+
+    const res = await fetch(`/api/attendance/summary?organization_id=${orgId}&month=${month}`);
+    const data = await res.json();
+    if (!data.employees || !data.employees.length) {
+      gridEl.innerHTML = '<div class="empty-state">Нет активных сотрудников в этой компании</div>';
+      return;
+    }
+
+    const [year, mon] = month.split('-').map(Number);
+    const daysInMonth = new Date(year, mon, 0).getDate();
+    const dayNums = Array.from({ length: daysInMonth }, (_, i) => i + 1);
+
+    // Подгружаем детальные часы по дням для каждого сотрудника
+    const detailPromises = data.employees.map(emp =>
+      fetch(`/api/attendance?employee_id=${emp.employee_id}&month=${month}`).then(r => r.json())
+    );
+    const details = await Promise.all(detailPromises);
+    data.employees.forEach((emp, idx) => { emp._days = details[idx].days || {}; });
+
+    // Группировка: сначала Официальные/Неофициальные, внутри — по подразделению
+    const officialEmployees = data.employees.filter(e => e.status !== 'unofficial');
+    const unofficialEmployees = data.employees.filter(e => e.status === 'unofficial');
+
+    function groupByDepartment(list) {
+      const groups = {};
+      list.forEach(emp => {
+        const dep = emp.department || 'Без подразделения';
+        if (!groups[dep]) groups[dep] = [];
+        groups[dep].push(emp);
+      });
+      return groups;
+    }
+
+    const colSpanExtra = 6; // Часов, Станд., Коррект., Расч. ЗП, ИТОГО, действия
+    const totalCols = 2 + daysInMonth + colSpanExtra; // +1 за колонку №
+
+    function categoryHeaderRow(label, count) {
+      return `<tr style="background:var(--navy-mid, #1B2A4A); color:#fff; font-weight:700;">
+        <td colspan="${totalCols}" style="position:sticky; left:0;">${label} — ${count}</td>
+      </tr>`;
+    }
+    function departmentHeaderRow(label, count) {
+      return `<tr style="background:var(--blue-light);">
+        <td colspan="${totalCols}" style="font-weight:700; color:var(--blue); position:sticky; left:0;">${label} — ${count}</td>
+      </tr>`;
+    }
+
+    let rowCounter = 0;
+    function employeeRow(emp) {
+      rowCounter++;
+      const dayMap = emp._days;
+      return `<tr data-att-emp="${emp.employee_id}">
+        <td style="text-align:center; color:var(--text-soft);">${rowCounter}</td>
+        <td style="position:sticky; left:0; background:var(--card); font-weight:700;">${emp.full_name}${emp.position ? `<div style="font-weight:400; font-size:11px; color:var(--text-soft);">${emp.position}</div>` : ''}</td>
+        ${dayNums.map(d => {
+          const dateStr = `${month}-${String(d).padStart(2, '0')}`;
+          const entry = dayMap[dateStr];
+          const val = entry ? entry.hours : '';
+          const weekend = isWeekendJs(year, mon, d);
+          return `<td style="padding:2px;">
+            <input type="number" min="0" max="24" class="att-hour-input" data-emp="${emp.employee_id}" data-date="${dateStr}"
+              value="${val}" placeholder="${weekend ? '' : '8'}"
+              style="width:36px; padding:4px; text-align:center; font-size:12px; ${weekend ? 'background:var(--readonly-bg, #EDEFF5);' : ''}"
+              onchange="saveAttendanceDay(this)">
+          </td>`;
+        }).join('')}
+        <td class="emp-total-cell" id="att-total-hours-${emp.employee_id}">${emp.totalHours}</td>
+        <td class="emp-total-cell">${emp.standardHours}</td>
+        <td class="emp-total-cell" id="att-adjustment-${emp.employee_id}" style="color:${emp.adjustment > 0 ? 'var(--green)' : (emp.adjustment < 0 ? 'var(--red)' : 'var(--text-soft)')};">
+          ${emp.adjustment > 0 ? '+' : ''}${fmt(emp.adjustment)}
+        </td>
+        <td class="emp-total-cell" id="att-adjusted-salary-${emp.employee_id}" style="font-weight:700;">${fmt(emp.adjustedSalary)}</td>
+        <td class="emp-total-cell" style="font-weight:700; color:var(--blue);">${fmt(emp.grandTotal)}</td>
+        <td class="emp-actions">
+          <button class="save-btn" style="font-size:11px; padding:5px 9px;" onclick="fillStandardMonth(${emp.employee_id})">Заполнить 8ч</button>
+        </td>
+      </tr>`;
+    }
+
+    let bodyHtml = '';
+    if (officialEmployees.length) {
+      bodyHtml += categoryHeaderRow('ОФИЦИАЛЬНЫЕ сотрудники', officialEmployees.length);
+      const groups = groupByDepartment(officialEmployees);
+      Object.keys(groups).forEach(dep => {
+        bodyHtml += departmentHeaderRow(dep, groups[dep].length);
+        groups[dep].forEach(emp => { bodyHtml += employeeRow(emp); });
+      });
+    }
+    if (unofficialEmployees.length) {
+      bodyHtml += categoryHeaderRow('НЕОФИЦИАЛЬНЫЕ сотрудники', unofficialEmployees.length);
+      const groups = groupByDepartment(unofficialEmployees);
+      Object.keys(groups).forEach(dep => {
+        bodyHtml += departmentHeaderRow(dep, groups[dep].length);
+        groups[dep].forEach(emp => { bodyHtml += employeeRow(emp); });
+      });
+    }
+
+    const headerHtml = `
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:14px; flex-wrap:wrap;">
+        <h3 style="margin:0; font-size:15px;">Учёт посещаемости сотрудников</h3>
+        <span style="background:var(--green-bg); color:var(--green); font-weight:700; padding:4px 12px; border-radius:20px; font-size:13px;">
+          ВСЕГО: ${data.employees.length}
+        </span>
+        <span style="font-weight:700; font-size:14px;">${MONTH_NAMES_RU[mon - 1]} ${year}</span>
+      </div>
+    `;
+
+    let html = headerHtml + `
+      <table class="emp-table" style="min-width:${300 + daysInMonth * 42}px;">
+        <thead>
+          <tr>
+            <th style="min-width:40px;">№</th>
+            <th style="min-width:170px; position:sticky; left:0; background:var(--card); z-index:1;">ФИО</th>
+            ${dayNums.map(d => {
+              const weekend = isWeekendJs(year, mon, d);
+              return `<th style="min-width:38px; text-align:center; ${weekend ? 'color:var(--red);' : ''}">${DOW_NAMES_RU[new Date(year, mon - 1, d).getDay()]}</th>`;
+            }).join('')}
+            <th style="min-width:70px;">Часов</th>
+            <th style="min-width:90px;">Станд.</th>
+            <th style="min-width:100px;">Коррект.</th>
+            <th style="min-width:110px;">Расч. ЗП</th>
+            <th style="min-width:120px;">ИТОГО к выплате</th>
+            <th style="min-width:120px;"></th>
+          </tr>
+          <tr>
+            <th></th>
+            <th style="position:sticky; left:0; background:var(--card); z-index:1;"></th>
+            ${dayNums.map(d => {
+              const weekend = isWeekendJs(year, mon, d);
+              return `<th style="text-align:center; font-weight:400; ${weekend ? 'color:var(--red);' : 'color:var(--text-soft);'}">${d}</th>`;
+            }).join('')}
+            <th colspan="6"></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${bodyHtml}
+        </tbody>
+      </table>
+    `;
+    gridEl.innerHTML = html;
+  }
+
+  function isWeekendJs(year, month, day) {
+    const dow = new Date(year, month - 1, day).getDay();
+    return dow === 0 || dow === 6;
+  }
+
+  async function saveAttendanceDay(input) {
+    const employee_id = input.dataset.emp;
+    const date = input.dataset.date;
+    const hours = input.value === '' ? 0 : Number(input.value);
+    await fetch('/api/attendance', {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_id, date, hours })
+    });
+    await refreshAttendanceRowTotals(employee_id);
+  }
+
+  async function refreshAttendanceRowTotals(employeeId) {
+    const orgId = document.getElementById('attendanceOrgSelector').value;
+    const month = document.getElementById('attendanceMonth').value;
+    const res = await fetch(`/api/attendance/summary?organization_id=${orgId}&month=${month}`);
+    const data = await res.json();
+    const emp = data.employees.find(e => String(e.employee_id) === String(employeeId));
+    if (!emp) return;
+    const hoursEl = document.getElementById('att-total-hours-' + employeeId);
+    const adjEl = document.getElementById('att-adjustment-' + employeeId);
+    const salEl = document.getElementById('att-adjusted-salary-' + employeeId);
+    if (hoursEl) hoursEl.textContent = emp.totalHours;
+    if (adjEl) {
+      adjEl.textContent = (emp.adjustment > 0 ? '+' : '') + fmt(emp.adjustment);
+      adjEl.style.color = emp.adjustment > 0 ? 'var(--green)' : (emp.adjustment < 0 ? 'var(--red)' : 'var(--text-soft)');
+    }
+    if (salEl) salEl.textContent = fmt(emp.adjustedSalary);
+  }
+
+  async function fillStandardMonth(employeeId) {
+    const month = document.getElementById('attendanceMonth').value;
+    if (!confirm('Проставить 8 часов на все рабочие дни месяца? Уже заполненные дни останутся без изменений.')) return;
+    await fetch('/api/attendance/fill-standard', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_id: employeeId, month, overwrite: false })
+    });
+    loadAttendanceGrid();
+  }
+
+  function renderEmployeesList(employees) {
+    const el = document.getElementById('employeesList');
+    const countEl = document.getElementById('employeesCount');
+    const active = employees.filter(e => e.status === 'active').length;
+    const temporary = employees.filter(e => e.status === 'temporary').length;
+    const unofficial = employees.filter(e => e.status === 'unofficial').length;
+    const terminated = employees.filter(e => e.status === 'terminated').length;
+    const parts = [`Всего сотрудников: <b style="color:var(--blue);">${employees.length}</b>`];
+    if (active) parts.push(`Официальный: <b style="color:var(--green);">${active}</b>`);
+    if (temporary) parts.push(`Временных: <b style="color:var(--amber);">${temporary}</b>`);
+    if (unofficial) parts.push(`Неофициальных: <b style="color:var(--amber);">${unofficial}</b>`);
+    if (terminated) parts.push(`Уволено: <b style="color:var(--text-soft);">${terminated}</b>`);
+    countEl.innerHTML = employees.length ? parts.join(' · ') : '';
+
+    const totalsRow = document.getElementById('employeesTotalsRow');
+    if (!employees.length) {
+      el.innerHTML = '<tr><td colspan="10" class="empty-state">Сотрудников пока нет</td></tr>';
+      totalsRow.innerHTML = '';
+      return;
+    }
+    totalsRow.innerHTML = '';
+
+    el.innerHTML = employees.map((emp, idx) => {
+      const official = emp.official_salary || 0;
+      const unofficial = emp.unofficial_salary || 0;
+      return `
+      <tr class="emp-tr locked" data-emp-id="${emp.id}">
+        <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+        <td><input class="emp-name" value="${emp.full_name}" title="${emp.full_name}" oninput="capitalizeInput(this)" readonly></td>
+        <td>
+          <select class="emp-position" disabled>
+            <option value="">—</option>
+            ${empPositionOptionsHtml(emp.position)}
+          </select>
+        </td>
+        <td>
+          <select class="emp-department" disabled>
+            <option value="">—</option>
+            ${empDepartmentOptionsHtml(emp.department)}
+          </select>
+        </td>
+        <td>
+          <select class="emp-status" onchange="handleEmpStatusChange(this)" disabled>
+            <option value="active" ${emp.status === 'active' ? 'selected' : ''}>Официальный</option>
+            <option value="temporary" ${emp.status === 'temporary' ? 'selected' : ''}>Временный</option>
+            <option value="unofficial" ${emp.status === 'unofficial' ? 'selected' : ''}>Неофициальный</option>
+            <option value="terminated" ${emp.status === 'terminated' ? 'selected' : ''}>Уволен</option>
+          </select>
+        </td>
+        <td><input class="emp-phone-work" placeholder="Раб. телефон" value="${emp.phone_work || ''}" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)" readonly></td>
+        <td><input class="emp-phone-personal" placeholder="Личный телефон" value="${emp.phone_personal || ''}" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)" readonly></td>
+        <td><input class="emp-email-work" placeholder="Раб. почта" value="${emp.email_work || ''}" readonly></td>
+        <td><input class="emp-telegram" placeholder="@telegram" value="${emp.telegram_username || ''}" readonly></td>
+        <td class="emp-actions">
+          <button class="save-btn" onclick="unlockEmployeeRow(this)">Изменить</button>
+          <button class="del-btn2" onclick="deleteEmployeeRow(${emp.id})">Удалить</button>
+        </td>
+      </tr>
+    `;
+    }).join('');
+    addTitleTooltips('employeesList');
+  }
+
+  function unlockEmployeeRow(btn) {
+    const row = btn.closest('.emp-tr');
+    const id = row.dataset.empId;
+    row.classList.remove('locked');
+    row.querySelectorAll('input').forEach(i => i.readOnly = false);
+    row.querySelectorAll('select').forEach(s => s.disabled = false);
+    btn.textContent = 'Сохранить';
+    btn.onclick = () => saveEmployeeRow(id, btn);
+  }
+
+  function formatSalaryInput(input) {
+    const digitsOnly = input.value.replace(/\D/g, '');
+    input.value = digitsOnly ? Number(digitsOnly).toLocaleString('ru-RU') : '';
+  }
+  function parseSalaryInput(str) {
+    return Number((str || '').replace(/\D/g, '')) || 0;
+  }
+
+  // Каждое слово — с заглавной буквы (ФИО, Должность), без изменения длины строки,
+  // поэтому позиция курсора восстанавливается на то же место.
+  // Проставляет title (подсказку при наведении) на все поля таблицы, где текст может не поместиться —
+  // вызывается после каждой отрисовки таблицы, чтобы не редактировать вручную каждый шаблон.
+  // Сбрасывает горизонтальную прокрутку всех прокручиваемых блоков внутри вкладки/раздела
+  // при повторном заходе на неё — чтобы всегда начиналось с начала таблицы.
+  function resetHorizontalScroll(panel) {
+    if (!panel) return;
+    panel.scrollLeft = 0;
+    panel.querySelectorAll('[style*="overflow-x"]').forEach(el => { el.scrollLeft = 0; });
+  }
+
+  function addTitleTooltips(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.querySelectorAll('input[type="text"], input:not([type]), select').forEach(el => {
+      const text = el.tagName === 'SELECT' ? (el.options[el.selectedIndex]?.textContent || '') : el.value;
+      if (text) el.title = text; else el.removeAttribute('title');
+    });
+  }
+
+  function capitalizeInput(input) {
+    const pos = input.selectionStart;
+    input.value = input.value.replace(/(^|\s|-)([а-яa-zё])/gi, (m, sep, ch) => sep + ch.toUpperCase());
+    input.setSelectionRange(pos, pos);
+  }
+
+  // Только первая буква всей строки (для Адреса — не нужно капитализировать каждое слово,
+  // "ул.", "д." и т.п. остаются как есть)
+  function capitalizeFirstOnly(input) {
+    const pos = input.selectionStart;
+    input.value = input.value.replace(/^([а-яa-zё])/i, ch => ch.toUpperCase());
+    input.setSelectionRange(pos, pos);
+  }
+
+  // +7 всегда подставляется автоматически при вводе телефона
+  function onPhoneFocus(input) {
+    if (!input.value) input.value = '+7 ';
+  }
+  function formatRuPhone(digits) {
+    digits = digits.slice(0, 10);
+    let out = '+7';
+    if (digits.length > 0) out += ' ' + digits.slice(0, 3);
+    if (digits.length > 3) out += ' ' + digits.slice(3, 6);
+    if (digits.length > 6) out += '-' + digits.slice(6, 8);
+    if (digits.length > 8) out += '-' + digits.slice(8, 10);
+    return out;
+  }
+  function ensurePhonePrefix(input) {
+    let digits = input.value.replace(/\D/g, '');
+    if (digits.startsWith('7')) digits = digits.slice(1);
+    else if (digits.startsWith('8')) digits = digits.slice(1);
+    input.value = formatRuPhone(digits);
+  }
+
+  // Если сотрудник Временный или Неофициальный — официальная ЗП недоступна для заполнения
+  function handleEmpStatusChange(select) {
+    const row = select.closest('.emp-tr');
+    const officialInput = row.querySelector('.emp-official');
+    if (!officialInput) return; // поле ЗП теперь не показывается в панели "Сотрудники" (перенесено во вкладку "ЗП")
+    const shouldDisable = select.value === 'temporary' || select.value === 'unofficial';
+    officialInput.disabled = shouldDisable;
+    if (shouldDisable) {
+      officialInput.value = '';
+      updateEmpTotal(officialInput);
+    }
+  }
+
+  function updateEmpTotal(input) {
+    const row = input.closest('.emp-tr');
+    const official = parseSalaryInput(row.querySelector('.emp-official').value);
+    const unofficial = parseSalaryInput(row.querySelector('.emp-unofficial').value);
+    row.querySelector('.emp-total-cell').textContent = fmt(official + unofficial);
+    recalcEmployeesTotalsRow();
+  }
+
+  function recalcEmployeesTotalsRow() {
+    const totalsRow = document.getElementById('employeesTotalsRow');
+    if (!totalsRow || !totalsRow.children.length) return;
+    let totalOfficial = 0, totalUnofficial = 0;
+    document.querySelectorAll('#employeesList .emp-official').forEach(i => { totalOfficial += parseSalaryInput(i.value); });
+    document.querySelectorAll('#employeesList .emp-unofficial').forEach(i => { totalUnofficial += parseSalaryInput(i.value); });
+    totalsRow.children[1].textContent = fmt(totalOfficial);
+    totalsRow.children[2].textContent = fmt(totalUnofficial);
+    totalsRow.children[3].textContent = fmt(totalOfficial + totalUnofficial);
+  }
+
+  function addEmployeeRow() {
+    const orgId = document.getElementById('employeeOrgSelector').value;
+    if (!orgId) { alert('Сначала выберите компанию'); return; }
+    document.getElementById('employeesList').insertAdjacentHTML('beforeend', `
+      <tr class="emp-tr" data-emp-id="new">
+        <td style="color:var(--text-soft); text-align:center;">—</td>
+        <td><input class="emp-name" placeholder="ФИО" oninput="capitalizeInput(this)"></td>
+        <td>
+          <select class="emp-position">
+            <option value="">Должность —</option>
+            ${empPositionOptionsHtml()}
+          </select>
+        </td>
+        <td>
+          <select class="emp-department">
+            <option value="">Подразделение —</option>
+            ${empDepartmentOptionsHtml()}
+          </select>
+        </td>
+        <td>
+          <select class="emp-status" onchange="handleEmpStatusChange(this)">
+            <option value="active">Официальный</option>
+            <option value="temporary">Временный</option>
+            <option value="unofficial">Неофициальный</option>
+            <option value="terminated">Уволен</option>
+          </select>
+        </td>
+        <td><input class="emp-phone-work" placeholder="Раб. телефон" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)"></td>
+        <td><input class="emp-phone-personal" placeholder="Личный телефон" onfocus="onPhoneFocus(this)" oninput="ensurePhonePrefix(this)"></td>
+        <td><input class="emp-email-work" placeholder="Раб. почта"></td>
+        <td><input class="emp-telegram" placeholder="@telegram"></td>
+        <td class="emp-actions"><button class="save-btn" onclick="createEmployee(this)">Создать</button></td>
+      </tr>
+    `);
+  }
+
+  async function createEmployee(btn) {
+    const row = btn.closest('.emp-tr');
+    const orgId = document.getElementById('employeeOrgSelector').value;
+    const statusEl = document.getElementById('employeesStatus');
+    const full_name = row.querySelector('.emp-name').value.trim();
+    if (!full_name) { statusEl.textContent = 'Укажите ФИО'; statusEl.style.color = 'var(--red)'; return; }
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          organization_id: orgId, full_name, position: row.querySelector('.emp-position').value.trim(),
+          department: row.querySelector('.emp-department').value.trim(),
+          status: row.querySelector('.emp-status').value,
+          phone_work: row.querySelector('.emp-phone-work').value.trim(),
+          phone_personal: row.querySelector('.emp-phone-personal').value.trim(),
+          email_work: row.querySelector('.emp-email-work').value.trim(),
+          telegram_username: row.querySelector('.emp-telegram').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сотрудник добавлен'; statusEl.style.color = 'var(--green)';
+      loadEmployeesPanel();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function saveEmployeeRow(id, btn) {
+    const row = btn.closest('.emp-tr');
+    const statusEl = document.getElementById('employeesStatus');
+    try {
+      const res = await fetch('/api/employees/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: row.querySelector('.emp-name').value.trim(),
+          position: row.querySelector('.emp-position').value.trim(),
+          department: row.querySelector('.emp-department').value.trim(),
+          status: row.querySelector('.emp-status').value,
+          phone_work: row.querySelector('.emp-phone-work').value.trim(),
+          phone_personal: row.querySelector('.emp-phone-personal').value.trim(),
+          email_work: row.querySelector('.emp-email-work').value.trim(),
+          telegram_username: row.querySelector('.emp-telegram').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Сохранено (если ЗП менялась — уведомление ушло в Telegram)'; statusEl.style.color = 'var(--green)';
+      await loadEmployeesPanel();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteEmployeeRow(id) {
+    if (!confirm('Удалить сотрудника? Если у него уже есть выплаты в истории, вместо удаления пометьте его "Уволен".')) return;
+    const statusEl = document.getElementById('employeesStatus');
+    try {
+      const res = await fetch('/api/employees/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      loadEmployeesPanel();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  // ==================== КАРТОЧКА КОМПАНИИ (PDF) ====================
+
+  async function buildCompanyCardHtml(orgId) {
+    const org = organizations.find(o => String(o.id) === String(orgId));
+    if (!org) return null;
+
+    const checked = Array.from(document.querySelectorAll('#cardFieldsGrid input:checked')).map(i => i.value);
+
+    let accounts = [];
+    if (checked.includes('bank_accounts')) {
+      const res = await fetch('/api/bank-accounts?organization_id=' + orgId);
+      accounts = await res.json();
+    }
+
+    const row = (label, value) => value
+      ? `<div style="display:flex; padding:8px 0; border-bottom:1px solid #E4E8F0;">
+           <div style="width:220px; color:#626B85; font-weight:600;">${label}</div>
+           <div style="flex:1;">${value}</div>
+         </div>` : '';
+
+    let html = `
+      <div style="width:700px; padding:40px; font-family: Arial, sans-serif; color:#12172A; background:#fff;">
+        <div style="font-size:22px; font-weight:700; margin-bottom:2px;">${org.legal_form} «${org.name}»</div>
+        <div style="font-size:12px; color:#626B85; margin-bottom:24px;">Карточка компании</div>
+        ${checked.includes('inn') ? row('ИНН', org.inn) : ''}
+        ${checked.includes('kpp') ? row('КПП', org.kpp) : ''}
+        ${checked.includes('ogrn') ? row(org.legal_form === 'ИП' ? 'ОГРНИП' : 'ОГРН', org.ogrn) : ''}
+        ${checked.includes('legal_address') ? row('Юридический адрес', org.legal_address) : ''}
+        ${checked.includes('postal_address') ? row('Почтовый адрес', org.postal_address) : ''}
+        ${checked.includes('phone') ? row('Телефон', org.phone) : ''}
+        ${checked.includes('contact_person') ? row('Контактное лицо', org.contact_person) : ''}
+        ${row('Налоговый режим', org.tax_regime)}
+    `;
+
+    if (checked.includes('bank_accounts') && accounts.length) {
+      html += `<div style="font-size:15px; font-weight:700; margin:24px 0 8px;">Банковские реквизиты</div>`;
+      accounts.forEach(a => {
+        html += `
+          <div style="padding:10px 0; border-bottom:1px solid #E4E8F0;">
+            <div style="font-weight:600; margin-bottom:4px;">${a.bank_name}</div>
+            ${a.bik ? `<div style="font-size:13px; color:#626B85;">БИК: ${a.bik}</div>` : ''}
+            ${a.account_number ? `<div style="font-size:13px; color:#626B85;">Р/с: ${a.account_number}</div>` : ''}
+            ${a.corr_account ? `<div style="font-size:13px; color:#626B85;">К/с: ${a.corr_account}</div>` : ''}
+          </div>
+        `;
+      });
+    }
+    html += `</div>`;
+    return html;
+  }
+
+  async function updateCardPreview() {
+    const orgId = document.getElementById('cardOrgSelector').value;
+    const preview = document.getElementById('cardPreview');
+    if (!orgId) { preview.innerHTML = ''; return; }
+    const html = await buildCompanyCardHtml(orgId);
+    preview.innerHTML = html || '';
+  }
+  document.getElementById('cardOrgSelector').addEventListener('change', updateCardPreview);
+  document.querySelectorAll('#cardFieldsGrid input').forEach(cb => {
+    cb.addEventListener('change', updateCardPreview);
+  });
+
+  async function downloadCompanyCard() {
+    const orgId = document.getElementById('cardOrgSelector').value;
+    const statusEl = document.getElementById('cardStatus');
+    if (!orgId) { statusEl.textContent = 'Выберите компанию'; statusEl.style.color = 'var(--red)'; return; }
+    const org = organizations.find(o => String(o.id) === String(orgId));
+    if (!org) return;
+
+    statusEl.textContent = 'Формирую PDF...'; statusEl.style.color = 'var(--text-soft)';
+    const html = await buildCompanyCardHtml(orgId);
+    if (!html) { statusEl.textContent = 'Ошибка: организация не найдена'; statusEl.style.color = 'var(--red)'; return; }
+
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-10000px';
+    container.style.top = '0';
+    container.style.width = '700px';
+    container.style.background = '#ffffff';
+    container.innerHTML = html;
+    document.body.appendChild(container);
+
+    try {
+      // Даём браузеру такт на реальную раскладку блока перед захватом
+      await new Promise(r => setTimeout(r, 50));
+
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        backgroundColor: '#ffffff',
+        width: 700,
+        windowWidth: 700
+      });
+
+      if (!canvas.width || !canvas.height) {
+        throw new Error('Не удалось отрисовать содержимое (пустой canvas)');
+      }
+
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = 210;
+      const margin = 10;
+      const imgWidthMm = pageWidth - margin * 2;
+      const imgHeightMm = (canvas.height * imgWidthMm) / canvas.width;
+
+      let heightLeft = imgHeightMm;
+      let position = margin;
+      doc.addImage(imgData, 'PNG', margin, position, imgWidthMm, imgHeightMm);
+      heightLeft -= (297 - margin * 2);
+
+      while (heightLeft > 0) {
+        doc.addPage();
+        position = margin - (imgHeightMm - heightLeft);
+        doc.addImage(imgData, 'PNG', margin, position, imgWidthMm, imgHeightMm);
+        heightLeft -= (297 - margin * 2);
+      }
+
+      const safeName = org.name.replace(/[^a-zA-Zа-яА-Я0-9]+/g, '_');
+      doc.save(`${safeName}_карточка.pdf`);
+      statusEl.textContent = '✓ Скачано'; statusEl.style.color = 'var(--green)';
+    } catch (err) {
+      statusEl.textContent = 'Ошибка генерации PDF: ' + err.message; statusEl.style.color = 'var(--red)';
+    } finally {
+      document.body.removeChild(container);
+    }
+  }
+
+  // ==================== ПОЛЬЗОВАТЕЛИ ====================
+
+  const ROLE_LABELS_DASH = { owner: 'Владелец', accountant: 'Главный Бухгалтер', user: 'Обычный пользователь' };
+  const POSITION_OPTIONS = ['Главный Бухгалтер', 'Операционный Директор', 'Директор по Контролю', 'Юрист', 'Старший юрист', 'Менеджер', 'Другое'];
+  let currentUserId = null;
+
+  function positionSelectHtml(cls, currentValue) {
+    const isCustom = currentValue && !POSITION_OPTIONS.slice(0, -1).includes(currentValue);
+    return `
+      <select class="${cls}-select" onchange="handlePositionChange(this)" style="flex:1 1 150px;">
+        <option value="">Должность —</option>
+        ${POSITION_OPTIONS.map(p => `<option value="${p}" ${!isCustom && p === currentValue ? 'selected' : ''}>${p}</option>`).join('')}
+      </select>
+      <input class="${cls}-custom" placeholder="Своя должность" value="${isCustom ? currentValue : ''}"
+        style="flex:1 1 150px; display:${isCustom ? '' : 'none'};">
+    `;
+  }
+  function handlePositionChange(sel) {
+    const customInput = sel.parentElement.querySelector('[class$="-custom"]');
+    if (sel.value === 'Другое') { customInput.style.display = ''; customInput.value = ''; customInput.focus(); }
+    else { customInput.style.display = 'none'; }
+  }
+  function readPosition(row, cls) {
+    const sel = row.querySelector(`.${cls}-select`);
+    const custom = row.querySelector(`.${cls}-custom`);
+    if (sel.value === 'Другое') return custom.value.trim();
+    return sel.value;
+  }
+
+  function togglePwVisibility(input, btn) {
+    if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Скрыть'; }
+    else { input.type = 'password'; btn.textContent = 'Показать'; }
+  }
+
+  async function loadUsersPanel() {
+    if (!currentUserId) {
+      const meRes = await fetch('/api/me');
+      const meData = await meRes.json();
+      currentUserId = meData.user ? meData.user.id : null;
+    }
+    const res = await fetch('/api/users');
+    const users = await res.json();
+
+    document.getElementById('usersSummary').innerHTML = `
+      <table class="orgs-summary-table">
+        <thead><tr><th style="width:36px;">№</th><th>Логин</th><th>ФИО</th><th>Роль</th><th>Должность</th><th>Email</th><th>Телефон</th><th>Telegram</th><th></th></tr></thead>
+        <tbody>
+          ${users.map((u, idx) => `
+            <tr>
+              <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+              <td><b>${u.username}</b>${String(u.id) === String(currentUserId) ? ' (вы)' : ''}</td>
+              <td>${u.full_name || '—'}</td>
+              <td><span class="org-tag">${ROLE_LABELS_DASH[u.role] || u.role}</span></td>
+              <td>${u.position || '—'}</td>
+              <td>${u.email || '—'}</td>
+              <td>${u.phone || '—'}</td>
+              <td>${u.telegram_username ? `<a href="https://t.me/${u.telegram_username.replace('@','')}" target="_blank">${u.telegram_username}</a>` : '—'}</td>
+              <td style="white-space:nowrap;">
+                <button class="save-btn" style="font-size:11px; padding:4px 9px;" onclick="editUserRow(${u.id})">Редактировать</button>
+                ${String(u.id) === String(currentUserId) ? '' : `<button class="del-btn2" style="font-size:11px; padding:4px 9px;" onclick="deleteUserRow(${u.id})">Удалить</button>`}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function addUserRow() {
+    const el = document.getElementById('usersEditList');
+    const rowId = 'new-user-' + Date.now();
+    el.insertAdjacentHTML('beforeend', `
+      <div class="org-row" id="${rowId}">
+        <input class="u-username" placeholder="Логин">
+        <div style="position:relative; flex:1 1 160px;">
+          <input class="u-password" type="password" placeholder="Пароль (мин. 6 симв.)" style="width:100%; padding-right:70px;">
+          <button type="button" onclick="togglePwVisibility(this.previousElementSibling, this)"
+            style="position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:10.5px; padding:4px 8px; border:none; border-radius:5px; background:var(--blue-light); color:var(--blue); cursor:pointer;">Показать</button>
+        </div>
+        <select class="u-role">
+          <option value="accountant">Главный Бухгалтер (доступ: внесение записей)</option>
+          <option value="user">Обычный пользователь (доступ: внесение записей)</option>
+        </select>
+        ${positionSelectHtml('u-position', '')}
+        <input class="u-fullname" placeholder="ФИО" style="flex:1 1 160px;">
+        <input class="u-email" placeholder="Email" style="flex:1 1 160px;">
+        <input class="u-phone" placeholder="Телефон" style="flex:0 1 140px;">
+        <input class="u-telegram" placeholder="@telegram_ник" style="flex:0 1 140px;">
+        <button class="save-btn" onclick="saveNewUser('${rowId}', this)">Создать</button>
+      </div>
+    `);
+  }
+
+  async function saveNewUser(rowId, btn) {
+    const row = document.getElementById(rowId);
+    const statusEl = document.getElementById('usersStatus');
+    const payload = {
+      username: row.querySelector('.u-username').value.trim(),
+      password: row.querySelector('.u-password').value,
+      role: row.querySelector('.u-role').value,
+      position: readPosition(row, 'u-position'),
+      full_name: row.querySelector('.u-fullname').value.trim(),
+      email: row.querySelector('.u-email').value.trim(),
+      phone: row.querySelector('.u-phone').value.trim(),
+      telegram_username: row.querySelector('.u-telegram').value.trim()
+    };
+    if (!payload.username || !payload.password) {
+      statusEl.textContent = 'Укажите логин и пароль'; statusEl.style.color = 'var(--red)'; return;
+    }
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Пользователь создан'; statusEl.style.color = 'var(--green)';
+      row.remove();
+      loadUsersPanel();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function editUserRow(id) {
+    const res = await fetch('/api/users/' + id);
+    const u = await res.json();
+    const el = document.getElementById('usersEditList');
+    const rowId = 'edit-user-' + id;
+    if (document.getElementById(rowId)) return; // уже открыто
+
+    el.insertAdjacentHTML('beforeend', `
+      <div class="org-row" id="${rowId}">
+        <div style="flex:0 1 140px; font-weight:600; align-self:center;">✎ ${u.username}</div>
+        <div style="position:relative; flex:1 1 160px;">
+          <input class="eu-password" type="password" placeholder="Новый пароль (необязательно)" style="width:100%; padding-right:70px;">
+          <button type="button" onclick="togglePwVisibility(this.previousElementSibling, this)"
+            style="position:absolute; right:4px; top:50%; transform:translateY(-50%); font-size:10.5px; padding:4px 8px; border:none; border-radius:5px; background:var(--blue-light); color:var(--blue); cursor:pointer;">Показать</button>
+        </div>
+        <select class="eu-role">
+          <option value="accountant" ${u.role === 'accountant' ? 'selected' : ''}>Главный Бухгалтер (доступ: внесение записей)</option>
+          <option value="user" ${u.role === 'user' ? 'selected' : ''}>Обычный пользователь (доступ: внесение записей)</option>
+          <option value="owner" ${u.role === 'owner' ? 'selected' : ''}>Владелец (полный доступ)</option>
+        </select>
+        ${positionSelectHtml('eu-position', u.position || '')}
+        <input class="eu-fullname" placeholder="ФИО" value="${u.full_name || ''}" style="flex:1 1 160px;">
+        <input class="eu-email" placeholder="Email" value="${u.email || ''}" style="flex:1 1 160px;">
+        <input class="eu-phone" placeholder="Телефон" value="${u.phone || ''}" style="flex:0 1 140px;">
+        <input class="eu-telegram" placeholder="@telegram_ник" value="${u.telegram_username || ''}" style="flex:0 1 140px;">
+        <button class="save-btn" onclick="saveEditedUser(${id}, '${rowId}')">Сохранить</button>
+        <button class="del-btn2" onclick="document.getElementById('${rowId}').remove()">Отмена</button>
+      </div>
+    `);
+  }
+
+  async function saveEditedUser(id, rowId) {
+    const row = document.getElementById(rowId);
+    const statusEl = document.getElementById('usersStatus');
+    const payload = {
+      role: row.querySelector('.eu-role').value,
+      position: readPosition(row, 'eu-position'),
+      full_name: row.querySelector('.eu-fullname').value.trim(),
+      email: row.querySelector('.eu-email').value.trim(),
+      phone: row.querySelector('.eu-phone').value.trim(),
+      telegram_username: row.querySelector('.eu-telegram').value.trim()
+    };
+    const newPassword = row.querySelector('.eu-password').value;
+    if (newPassword) payload.newPassword = newPassword;
+
+    try {
+      const res = await fetch('/api/users/' + id, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      statusEl.textContent = '✓ Изменения сохранены'; statusEl.style.color = 'var(--green)';
+      row.remove();
+      loadUsersPanel();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteUserRow(id) {
+    if (!confirm('Удалить пользователя? Это действие необратимо.')) return;
+    const statusEl = document.getElementById('usersStatus');
+    try {
+      const res = await fetch('/api/users/' + id, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      loadUsersPanel();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  // ==================== НАЛОГИ ====================
+  document.querySelectorAll('.period-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      taxPeriod = btn.dataset.period;
+      loadTaxEstimate();
+    });
+  });
+
+  function periodRange() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    let from, to;
+    if (taxPeriod === 'month') {
+      from = new Date(y, m, 1); to = new Date(y, m + 1, 0);
+    } else if (taxPeriod === 'quarter') {
+      const qStart = Math.floor(m / 3) * 3;
+      from = new Date(y, qStart, 1); to = new Date(y, qStart + 3, 0);
+    } else {
+      from = new Date(y, 0, 1); to = new Date(y, 11, 31);
+    }
+    const iso = (d) => d.toISOString().slice(0, 10);
+    return { from: iso(from), to: iso(to) };
+  }
+
+  async function loadTaxEstimate() {
+    const orgId = document.getElementById('taxOrgSelector').value;
+    const box = document.getElementById('taxResultBox');
+    if (!orgId) { box.innerHTML = '<div class="empty-state">Сначала создайте организацию</div>'; return; }
+    const { from, to } = periodRange();
+    try {
+      const res = await fetch(`/api/tax-estimate?organization_id=${orgId}&from=${from}&to=${to}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      box.innerHTML = `
+        <div class="tax-result-row"><span>Налоговый режим</span><b>${data.regime}</b></div>
+        <div class="tax-result-row"><span>Доход за период</span><b>${fmt(data.income)}</b></div>
+        <div class="tax-result-row"><span>Расход за период</span><b>${fmt(data.expense)}</b></div>
+        <div class="tax-result-row" style="font-size:16px;"><span>Ориентировочный налог</span><b style="color:var(--blue);">${data.taxEstimate !== null ? fmt(data.taxEstimate) : '—'}</b></div>
+        <p style="font-size:13px; color:var(--text-soft); margin-top:12px;">${data.explanation}</p>
+      `;
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state" style="color:var(--red);">Ошибка: ${err.message}</div>`;
+    }
+  }
+
+  async function loadTaxCalendar() {
+    const orgId = document.getElementById('taxOrgSelector').value;
+    const box = document.getElementById('taxCalendarBox');
+    if (!orgId) { box.innerHTML = '<div class="empty-state">Сначала создайте организацию</div>'; return; }
+    try {
+      const res = await fetch(`/api/tax-calendar?organization_id=${orgId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      if (!data.items.length) { box.innerHTML = '<div class="empty-state">Нет запланированных сроков для этого режима</div>'; return; }
+
+      box.innerHTML = data.items.map(item => {
+        if (item.date === null) {
+          return `<div class="cal-item"><span class="cal-type-icon">ℹ️</span><span class="cal-title">${item.title}</span></div>`;
+        }
+        const icon = item.type === 'report' ? '📄' : '💳';
+        let badgeClass = 'later', badgeText = `через ${item.daysUntil} дн.`;
+        if (item.daysUntil <= 7) { badgeClass = 'soon'; badgeText = item.daysUntil <= 0 ? 'сегодня/просрочено' : `через ${item.daysUntil} дн.`; }
+        else if (item.daysUntil <= 30) { badgeClass = 'upcoming'; }
+        const dateStr = new Date(item.date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' });
+        return `
+          <div class="cal-item">
+            <span class="cal-date">${dateStr}</span>
+            <span class="cal-type-icon">${icon}</span>
+            <span class="cal-title">${item.title}</span>
+            <span class="cal-badge ${badgeClass}">${badgeText}</span>
+          </div>
+        `;
+      }).join('');
+    } catch (err) {
+      box.innerHTML = `<div class="empty-state" style="color:var(--red);">Ошибка: ${err.message}</div>`;
+    }
+  }
+
+  function orgLabel(o) { return `${o.legal_form} «${o.name}»`; }
+
+  function fmt(n) { return Math.round(n).toLocaleString('ru-RU') + ' ₽'; }
+
+  // ==================== ПЕРЕКЛЮЧАТЕЛЬ РАСХОДЫ/ДОХОДЫ (вкладка Категории) ====================
+  document.querySelectorAll('.cattype-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cattype-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentCatType = btn.dataset.cattype;
+      renderCategories();
+    });
+  });
+
+  function goHome() {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('.tab-btn[data-tab="overview"]').classList.add('active');
+    document.getElementById('tab-overview').classList.add('active');
+  }
+
+  // ==================== ВКЛАДКИ И САЙДБАР ====================
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = document.getElementById('tab-' + btn.dataset.tab);
+      panel.classList.add('active');
+      resetHorizontalScroll(panel);
+      if (btn.dataset.tab === 'attendance') {
+        initAttendanceMonth();
+        loadAttendanceGrid();
+      }
+      if (btn.dataset.tab === 'salary') {
+        loadSalaryTab();
+      }
+      if (btn.dataset.tab === 'bonuses') {
+        loadAdjustmentsList('bonus');
+      }
+      if (btn.dataset.tab === 'penalties') {
+        loadAdjustmentsList('penalty');
+      }
+    });
+  });
+
+  document.querySelectorAll('.sidebar-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      const panel = document.getElementById(btn.dataset.panel);
+      panel.classList.add('active');
+      resetHorizontalScroll(panel);
+      if (btn.dataset.panel === 'rulesPanel') {
+        loadRulesContent();
+      }
+      if (btn.dataset.panel === 'customersPanel') {
+        loadCounterpartiesList('customer');
+      }
+      if (btn.dataset.panel === 'suppliersPanel') {
+        loadCounterpartiesList('supplier');
+      }
+      if (btn.dataset.panel === 'socialPackagePanel') {
+        loadSocialPackageList();
+      }
+    });
+  });
+
+  async function loadRulesContent() {
+    const el = document.getElementById('rulesContent');
+    try {
+      const res = await fetch('/api/rules');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка загрузки');
+      el.innerHTML = marked.parse(data.markdown);
+    } catch (err) {
+      el.innerHTML = `<div class="empty-state" style="color:var(--red);">Не удалось загрузить RULES.md: ${err.message}</div>`;
+    }
+  }
+
+  // ==================== АВТОРИЗАЦИЯ ====================
+  let isOwner = false;
+  let userRole = 'user';
+
+  async function checkAuth() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    if (data.mustChangePassword) { window.location.href = '/profile.html?expired=1'; return; }
+    isOwner = data.user.role === 'owner';
+    userRole = data.user.role;
+    const roleLabelsShort = { owner: '', accountant: ' (главный бухгалтер)', user: ' (обычный пользователь)' };
+    document.getElementById('whoami').textContent = data.user.username + (roleLabelsShort[userRole] || '');
+
+    // Все разделы управления теперь видны всем ролям (просмотр + скачивание Excel/PDF доступны всем).
+    // Права на добавление/редактирование/удаление внутри разделов регулируются CSS-классом ниже:
+    // владелец — везде; бухгалтер — везде, кроме Лимитов бюджета; обычный пользователь —
+    // только просмотр в Организациях/Банк.счетах/Пользователях/Лимитах (Сотрудники и Табель — можно редактировать).
+    document.body.classList.remove('role-owner', 'role-accountant', 'role-user');
+    document.body.classList.add('role-' + userRole);
+    const limitsRoNote = document.getElementById('limitsReadOnlyNote');
+    if (limitsRoNote) limitsRoNote.style.display = isOwner ? 'none' : '';
+  }
+  async function logout() { await fetch('/api/logout', { method: 'POST' }); window.location.href = '/login.html'; }
+
+  // ==================== ЛИМИТЫ БЮДЖЕТА ====================
+  function renderLimitsGrid() {
+    const grid = document.getElementById('limitsGrid');
+    grid.innerHTML = '';
+    Object.keys(budgetLimits).forEach(cat => {
+      const row = document.createElement('div');
+      row.className = 'limit-item';
+      row.innerHTML = `<span>${cat}</span><input type="number" data-cat="${cat}" value="${budgetLimits[cat]}">`;
+      grid.appendChild(row);
+    });
+  }
+  function addCategoryRow() {
+    if (!selectedOrgId) return;
+    const name = prompt('Название новой категории:');
+    if (!name) return;
+    budgetLimits[name] = 0;
+    renderLimitsGrid();
+  }
+  async function applyLimits() {
+    if (!selectedOrgId) return;
+    document.querySelectorAll('#limitsGrid input').forEach(inp => {
+      budgetLimits[inp.dataset.cat] = Number(inp.value) || 0;
+    });
+    startingBalance = Number(document.getElementById('startingBalance').value) || 0;
+    const statusEl = document.getElementById('limitsStatus');
+    try {
+      const res = await fetch('/api/budget-limits', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ organization_id: selectedOrgId, limits: budgetLimits })
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      statusEl.textContent = '✓ Сохранено'; statusEl.style.color = 'var(--green)';
+      renderAll();
+    } catch (err) {
+      statusEl.textContent = 'Ошибка: ' + err.message; statusEl.style.color = 'var(--red)';
+    }
+  }
+
+  async function deleteTransaction(id) {
+    if (!confirm('Удалить эту запись?')) return;
+    await fetch('/api/transactions/' + id, { method: 'DELETE' });
+    await loadAll();
+  }
+
+  let editingTxId = null;
+
+  function openEditTransaction(id) {
+    const r = records.find(rec => rec.id === id);
+    if (!r) return;
+    editingTxId = id;
+    document.getElementById('editTxDate').value = r.date.toISOString().slice(0, 10);
+    document.getElementById('editTxType').value = r.type;
+    document.getElementById('editTxCategory').value = r.category;
+    document.getElementById('editTxAmount').value = r.amount;
+    document.getElementById('editTxDescription').value = r.description || '';
+    document.getElementById('editTxStatus').value = r.status || 'Оплачено';
+    document.getElementById('editTxModal').classList.add('open');
+  }
+
+  function closeEditTxModal() {
+    document.getElementById('editTxModal').classList.remove('open');
+    editingTxId = null;
+  }
+
+  async function saveEditedTransaction() {
+    if (!editingTxId) return;
+    const payload = {
+      date: document.getElementById('editTxDate').value,
+      type: document.getElementById('editTxType').value,
+      category: document.getElementById('editTxCategory').value.trim(),
+      amount: Number(document.getElementById('editTxAmount').value) || 0,
+      description: document.getElementById('editTxDescription').value.trim(),
+      status: document.getElementById('editTxStatus').value
+    };
+    if (!payload.category || !payload.amount) { alert('Заполните категорию и сумму'); return; }
+    try {
+      const res = await fetch('/api/transactions/' + editingTxId, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Ошибка сохранения');
+      closeEditTxModal();
+      await loadAll();
+    } catch (err) {
+      alert('Ошибка: ' + err.message);
+    }
+  }
+
+  function statusTagClass(status) {
+    const s = (status || '').toLowerCase();
+    if (s.includes('оплач')) return 'paid';
+    if (s.includes('ожид')) return 'pending';
+    if (s.includes('просроч')) return 'overdue';
+    return 'pending';
+  }
+
+  // ==================== ЗАГРУЗКА ДАННЫХ ====================
+  async function loadAll() {
+    const txRes = await fetch('/api/transactions');
+    const txRows = await txRes.json();
+
+    records = txRows.map(r => ({
+      id: r.id, organizationId: r.organization_id, date: new Date(r.date), type: r.type || 'expense',
+      category: r.category, amount: r.amount, description: r.description,
+      status: r.status, responsible: r.responsible,
+      employeeId: r.employee_id, payrollType: r.payroll_type, payrollPeriod: r.payroll_period
+    }));
+    populateFilterCategories();
+    await loadOrganizations();
+    updateAddOrgButtonVisibility();
+    await loadBudgetLimits();
+    await loadBankAccounts();
+    renderAll();
+    loadTaxEstimate();
+    loadTaxCalendar();
+    updateCardPreview();
+    loadUsersPanel();
+    loadEmployeesPanel();
+    await loadAllEmployeesMap();
+    renderAllTransactions();
+  }
+
+  function visibleRecords() {
+    if (!selectedOrgId) return records;
+    return records.filter(r => String(r.organizationId) === String(selectedOrgId));
+  }
+
+  function populateFilterCategories() {
+    const sel = document.getElementById('filterCategory');
+    const cats = Array.from(new Set(records.map(r => r.category))).sort();
+    sel.innerHTML = '<option value="">Все категории</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('');
+  }
+
+  function renderAll() {
+    renderOverview();
+    renderCategories();
+    renderCashflow();
+    renderAllTransactions();
+  }
+
+  // ==================== ОБЗОР ====================
+  function renderOverview() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const monthExpense = visibleRecords().filter(r => r.type === 'expense' && r.date.getFullYear() === y && r.date.getMonth() === m);
+    const monthIncome = visibleRecords().filter(r => r.type === 'income' && r.date.getFullYear() === y && r.date.getMonth() === m);
+    const isAllOrgs = !selectedOrgId;
+
+    document.getElementById('overviewAllOrgsNote').style.display = isAllOrgs ? '' : 'none';
+    document.getElementById('kpiRemainingCard').style.opacity = isAllOrgs ? 0.35 : 1;
+    document.getElementById('kpiProjectedCard').style.opacity = isAllOrgs ? 0.35 : 1;
+
+    const totalMonth = monthExpense.reduce((s, r) => s + r.amount, 0);
+    const totalIncomeMonth = monthIncome.reduce((s, r) => s + r.amount, 0);
+    const netMonth = totalIncomeMonth - totalMonth;
+    const totalBudget = Object.values(budgetLimits).reduce((s, v) => s + v, 0);
+    const remaining = totalBudget - totalMonth;
+    const dayOfMonth = now.getDate();
+    const avgDaily = totalMonth / dayOfMonth;
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const projected = avgDaily * daysInMonth;
+
+    document.getElementById('kpiIncome').textContent = fmt(totalIncomeMonth);
+    document.getElementById('kpiTotal').textContent = fmt(totalMonth);
+    const netEl = document.getElementById('kpiNet');
+    netEl.textContent = (netMonth >= 0 ? '+' : '−') + fmt(Math.abs(netMonth));
+    netEl.className = 'value ' + (netMonth >= 0 ? 'green' : 'red');
+    const remEl = document.getElementById('kpiRemaining');
+    remEl.textContent = isAllOrgs ? '—' : fmt(Math.abs(remaining));
+    remEl.className = 'value ' + (isAllOrgs ? '' : (remaining >= 0 ? 'green' : 'red'));
+    document.getElementById('kpiAvg').textContent = fmt(avgDaily);
+    const projEl = document.getElementById('kpiProjected');
+    projEl.textContent = isAllOrgs ? '—' : fmt(projected);
+    projEl.className = 'value ' + (isAllOrgs ? '' : (projected > totalBudget ? 'red' : 'green'));
+    document.getElementById('kpiProjectedNote').textContent = isAllOrgs ? 'выберите компанию' : (totalBudget ? `при бюджете ${fmt(totalBudget)}` : 'бюджет не задан');
+
+    const catTotals = {};
+    monthExpense.forEach(r => { catTotals[r.category] = (catTotals[r.category] || 0) + r.amount; });
+    const allCats = Array.from(new Set([...Object.keys(budgetLimits), ...Object.keys(catTotals)]));
+
+    const catRowsEl = document.getElementById('catRows');
+    catRowsEl.innerHTML = '';
+    const alerts = [];
+
+    if (isAllOrgs) {
+      catRowsEl.innerHTML = '<div class="empty-state">Выберите компанию, чтобы увидеть расходы по категориям с учётом лимитов</div>';
+    } else {
+    allCats.filter(cat => catTotals[cat] || budgetLimits[cat])
+      .sort((a, b) => (catTotals[b] || 0) - (catTotals[a] || 0))
+      .forEach(cat => {
+        const spent = catTotals[cat] || 0;
+        const limit = budgetLimits[cat] || 0;
+        const pct = limit ? Math.round((spent / limit) * 100) : null;
+        let color = 'var(--green)';
+        if (pct !== null) { if (pct >= 100) color = 'var(--red)'; else if (pct >= 80) color = 'var(--amber)'; }
+        if (pct !== null && pct >= 100) alerts.push({ level: 'over', text: `«${cat}» превысила бюджет: ${fmt(spent)} из ${fmt(limit)} (${pct}%)` });
+        else if (pct !== null && pct >= 80) alerts.push({ level: 'warn', text: `«${cat}» приближается к лимиту: ${pct}% от ${fmt(limit)}` });
+
+        const item = document.createElement('div');
+        item.className = 'cat-item';
+        item.innerHTML = `
+          <div class="cat-top"><span class="cat-name">${cat}</span><span class="cat-figures">${fmt(spent)}${limit ? ' / ' + fmt(limit) : ''}</span></div>
+          <div class="cat-track"><div class="cat-fill" style="width:${pct !== null ? Math.min(100, pct) : (spent > 0 ? 40 : 0)}%; background:${color};"></div></div>
+        `;
+        catRowsEl.appendChild(item);
+      });
+    if (!catRowsEl.children.length) catRowsEl.innerHTML = '<div class="empty-state">Нет данных за этот месяц</div>';
+    }
+
+    const alertsSection = document.getElementById('alertsSection');
+    const alertsList = document.getElementById('alertsList');
+    if (alerts.length) {
+      alertsSection.style.display = '';
+      alertsList.innerHTML = alerts.map(a => `<div class="alert ${a.level === 'warn' ? 'warn' : ''}"><span>${a.level === 'warn' ? '🟡' : '🔴'}</span><span>${a.text}</span></div>`).join('');
+    } else alertsSection.style.display = 'none';
+
+    const dailyTotals = {};
+    monthExpense.forEach(r => { const k = r.date.getDate(); dailyTotals[k] = (dailyTotals[k] || 0) + r.amount; });
+    const dailyIncomeTotals = {};
+    monthIncome.forEach(r => { const k = r.date.getDate(); dailyIncomeTotals[k] = (dailyIncomeTotals[k] || 0) + r.amount; });
+    const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+    const data = labels.map(d => dailyTotals[d] || 0);
+    const incomeData = labels.map(d => dailyIncomeTotals[d] || 0);
+
+    drawChart('trendChart', 'line', {
+      labels, datasets: [
+        { label: 'Доходы, ₽', data: incomeData, borderColor: '#1F9254', backgroundColor: 'rgba(31,146,84,0.10)', fill: true, tension: 0.25, pointRadius: 2 },
+        { label: 'Расходы, ₽', data, borderColor: '#D33F3F', backgroundColor: 'rgba(211,63,63,0.10)', fill: true, tension: 0.25, pointRadius: 2 }
+      ]
+    }, { plugins: { legend: { display: true, position: 'top', labels: { boxWidth: 12, font: { size: 11 } } } } });
+  }
+
+  // ==================== КАТЕГОРИИ ====================
+  const PALETTE = ['#2D6CDF','#1F9254','#C98A1F','#D33F3F','#7A5FD6','#0E9AA7','#E0682C','#5B6470','#B0509A','#3EA6A6'];
+  const REDS = ['#D33F3F','#B33030','#E06666','#8C1F1F','#F28B82','#A82D2D','#E2807D','#7A1616','#F4A6A3','#C94F4F'];
+  const GREENS = ['#1F9254','#166B3D','#2FB86B','#0F5C34','#57C98A','#249457','#7BD9A1','#0C4527','#A6E6C0','#3FA868'];
+
+  function renderCategories() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const isExpense = currentCatType === 'expense';
+    const isAllOrgs = !selectedOrgId;
+    document.getElementById('categoriesAllOrgsNote').style.display = isAllOrgs ? '' : 'none';
+    const monthTx = visibleRecords().filter(r => r.type === currentCatType && r.date.getFullYear() === y && r.date.getMonth() === m);
+    const catTotals = {};
+    monthTx.forEach(r => { catTotals[r.category] = (catTotals[r.category] || 0) + r.amount; });
+    const cats = Object.keys(catTotals).sort((a,b) => catTotals[b]-catTotals[a]);
+
+    document.getElementById('pieChartTitle').textContent = `Доли категорий (${isExpense ? 'расходы' : 'доходы'}, месяц)`;
+    document.getElementById('catDetailTitle').textContent = `Подробно по категориям (${isExpense ? 'расходы' : 'доходы'})`;
+    document.getElementById('budgetBarCard').style.display = (isExpense && !isAllOrgs) ? '' : 'none';
+
+    const catPalette = isExpense ? REDS : GREENS;
+    drawChart('pieChart', 'doughnut', {
+      labels: cats,
+      datasets: [{ data: cats.map(c => catTotals[c]), backgroundColor: cats.map((_, i) => catPalette[i % catPalette.length]) }]
+    }, { plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } });
+
+    if (isExpense && !isAllOrgs) {
+      const allCats = Array.from(new Set([...Object.keys(budgetLimits), ...cats]));
+      drawChart('budgetBarChart', 'bar', {
+        labels: allCats,
+        datasets: [
+          { label: 'Факт (расход)', data: allCats.map(c => catTotals[c] || 0), backgroundColor: '#D33F3F' },
+          { label: 'Лимит', data: allCats.map(c => budgetLimits[c] || 0), backgroundColor: '#D8DEEA' }
+        ]
+      }, { plugins: { legend: { position: 'bottom' } }, scales: { x: { ticks: { font: { size: 10 } } } } });
+    }
+
+    const detailEl = document.getElementById('catRowsDetailed');
+    const catsForDetail = (isExpense && !isAllOrgs) ? Array.from(new Set([...Object.keys(budgetLimits), ...cats])) : cats;
+    detailEl.innerHTML = catsForDetail.length ? catsForDetail.sort((a,b)=>(catTotals[b]||0)-(catTotals[a]||0)).map(cat => {
+      const spent = catTotals[cat] || 0;
+      const limit = (isExpense && !isAllOrgs) ? (budgetLimits[cat] || 0) : 0;
+      const pct = limit ? Math.round((spent/limit)*100) : null;
+      let color = isExpense ? 'var(--red)' : 'var(--green)';
+      return `
+        <div class="cat-item">
+          <div class="cat-top"><span class="cat-name">${cat}</span><span class="cat-figures">${fmt(spent)}${limit ? ' / ' + fmt(limit) + (pct!==null ? ' ('+pct+'%)' : '') : ''}</span></div>
+          <div class="cat-track"><div class="cat-fill" style="width:${pct !== null ? Math.min(100, pct) : (spent > 0 ? 60 : 0)}%; background:${color};"></div></div>
+        </div>`;
+    }).join('') : '<div class="empty-state">Нет данных</div>';
+  }
+
+  // ==================== CASH FLOW ====================
+  function renderCashflow() {
+    const now = new Date();
+    const y = now.getFullYear(), m = now.getMonth();
+    const monthAll = visibleRecords().filter(r => r.date.getFullYear() === y && r.date.getMonth() === m);
+    const income = monthAll.filter(r => r.type === 'income').reduce((s,r)=>s+r.amount,0);
+    const expense = monthAll.filter(r => r.type === 'expense').reduce((s,r)=>s+r.amount,0);
+    const net = income - expense;
+
+    document.getElementById('kpiIncome').textContent = fmt(income);
+    document.getElementById('kpiExpense').textContent = fmt(expense);
+    const netEl = document.getElementById('kpiNet');
+    netEl.textContent = (net >= 0 ? '+' : '−') + fmt(Math.abs(net));
+    netEl.className = 'value ' + (net >= 0 ? 'green' : 'red');
+
+    const allTimeNet = records.reduce((s,r) => s + (r.type === 'income' ? r.amount : -r.amount), 0);
+    const balance = startingBalance + allTimeNet;
+    const balEl = document.getElementById('kpiBalance');
+    balEl.textContent = fmt(balance);
+    balEl.className = 'value ' + (balance >= 0 ? 'green' : 'red');
+
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const labels = Array.from({length: daysInMonth}, (_, i) => i + 1);
+    const incomeByDay = {}, expenseByDay = {};
+    monthAll.forEach(r => {
+      const d = r.date.getDate();
+      if (r.type === 'income') incomeByDay[d] = (incomeByDay[d]||0) + r.amount;
+      else expenseByDay[d] = (expenseByDay[d]||0) + r.amount;
+    });
+
+    drawChart('cashflowBarChart', 'bar', {
+      labels,
+      datasets: [
+        { label: 'Доход', data: labels.map(d => incomeByDay[d] || 0), backgroundColor: '#1F9254' },
+        { label: 'Расход', data: labels.map(d => -(expenseByDay[d] || 0)), backgroundColor: '#D33F3F' }
+      ]
+    }, { plugins: { legend: { position: 'bottom' } }, scales: { y: { ticks: { callback: v => fmt(Math.abs(v)) } } } });
+
+    const sortedAll = [...visibleRecords()].sort((a,b) => a.date - b.date);
+    let running = startingBalance;
+    const balLabels = [], balData = [];
+    sortedAll.forEach(r => {
+      running += (r.type === 'income' ? r.amount : -r.amount);
+      balLabels.push(r.date.toLocaleDateString('ru-RU'));
+      balData.push(running);
+    });
+
+    drawChart('balanceLineChart', 'line', {
+      labels: balLabels,
+      datasets: [{ label: 'Баланс, ₽', data: balData, borderColor: '#2D6CDF', backgroundColor: 'rgba(45,108,223,0.08)', fill: true, tension: 0.2, pointRadius: 1 }]
+    }, { plugins: { legend: { display: false } } });
+  }
+
+  // ==================== ВСЕ ОПЕРАЦИИ ====================
+  function renderAllTransactions() {
+    const type = document.getElementById('filterType').value;
+    const cat = document.getElementById('filterCategory').value;
+    const from = document.getElementById('filterFrom').value;
+    const to = document.getElementById('filterTo').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase();
+
+    let filtered = [...visibleRecords()];
+    if (type) filtered = filtered.filter(r => r.type === type);
+    if (cat) filtered = filtered.filter(r => r.category === cat);
+    if (from) filtered = filtered.filter(r => r.date >= new Date(from));
+    if (to) filtered = filtered.filter(r => r.date <= new Date(to));
+    if (search) filtered = filtered.filter(r => (r.description||'').toLowerCase().includes(search));
+
+    filtered.sort((a,b) => b.date - a.date);
+
+    const incomeSum = filtered.filter(r => r.type === 'income').reduce((s,r)=>s+r.amount,0);
+    const expenseSum = filtered.filter(r => r.type === 'expense').reduce((s,r)=>s+r.amount,0);
+    document.getElementById('flowSummary').innerHTML = `
+      <span class="chip income">Доход: ${fmt(incomeSum)}</span>
+      <span class="chip expense">Расход: ${fmt(expenseSum)}</span>
+      <span class="chip net">Итого: ${incomeSum - expenseSum >= 0 ? '+' : '−'}${fmt(Math.abs(incomeSum - expenseSum))}</span>
+      <span style="color:var(--text-soft); align-self:center;">Показано операций: ${filtered.length}</span>
+    `;
+
+    const body = document.getElementById('allTxBody');
+    body.innerHTML = filtered.map((r, idx) => `
+      <tr>
+        <td style="color:var(--text-soft); text-align:center;">${idx + 1}</td>
+        <td>${r.date.toLocaleDateString('ru-RU')}</td>
+        <td>${orgName(r.organizationId)}</td>
+        <td><span class="tag ${r.type}">${r.type === 'income' ? 'Доход' : 'Расход'}</span></td>
+        <td>${r.category}</td>
+        <td class="num">${fmt(r.amount)}</td>
+        <td>${r.description || ''}</td>
+        <td>${r.employeeId ? (employeeNameById[r.employeeId] || '—') : ''}${r.payrollType ? `<br><span style="font-size:11px; color:var(--text-soft);">${r.payrollType}</span>` : ''}</td>
+        <td>${r.payrollPeriod || ''}</td>
+        <td><span class="tag ${statusTagClass(r.status)}">${r.status || '—'}</span></td>
+        <td>${r.responsible || ''}</td>
+        <td>
+          <button class="save-btn" style="font-size:11px; padding:4px 9px;" onclick="openEditTransaction(${r.id})">изменить</button>
+          <button class="del-btn" onclick="deleteTransaction(${r.id})">удалить</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="12" class="empty-state">Нет операций по заданным фильтрам</td></tr>';
+  }
+
+  function exportToExcel() {
+    const type = document.getElementById('filterType').value;
+    const cat = document.getElementById('filterCategory').value;
+    const from = document.getElementById('filterFrom').value;
+    const to = document.getElementById('filterTo').value;
+    const search = document.getElementById('filterSearch').value.toLowerCase();
+
+    let filtered = [...visibleRecords()];
+    if (type) filtered = filtered.filter(r => r.type === type);
+    if (cat) filtered = filtered.filter(r => r.category === cat);
+    if (from) filtered = filtered.filter(r => r.date >= new Date(from));
+    if (to) filtered = filtered.filter(r => r.date <= new Date(to));
+    if (search) filtered = filtered.filter(r => (r.description||'').toLowerCase().includes(search));
+    filtered.sort((a,b) => b.date - a.date);
+
+    const rows = filtered.map((r, idx) => ({
+      '№': idx + 1,
+      'Дата': r.date.toLocaleDateString('ru-RU'),
+      'Организация': orgName(r.organizationId),
+      'Тип': r.type === 'income' ? 'Доход' : 'Расход',
+      'Категория': r.category,
+      'Сумма': r.amount,
+      'Описание': r.description || '',
+      'Сотрудник': r.employeeId ? (employeeNameById[r.employeeId] || '') : '',
+      'Тип выплаты': r.payrollType || '',
+      'Период': r.payrollPeriod || '',
+      'Статус': r.status || '',
+      'Ответственный': r.responsible || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:6},{wch:12},{wch:20},{wch:9},{wch:16},{wch:12},{wch:28},{wch:18},{wch:18},{wch:9},{wch:12},{wch:14}];
+    applyExcelNumberFormat(ws, ['F'], rows.length);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Операции');
+    XLSX.writeFile(wb, `Операции_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+  function orgName(id) {
+    const o = organizations.find(x => String(x.id) === String(id));
+    return o ? orgLabel(o) : '—';
+  }
+  ['filterType','filterCategory','filterFrom','filterTo','filterSearch'].forEach(id => {
+    document.getElementById(id).addEventListener('input', renderAllTransactions);
+  });
+
+  // ==================== УТИЛИТА ГРАФИКОВ ====================
+  function drawChart(canvasId, type, data, extraOptions) {
+    if (charts[canvasId]) charts[canvasId].destroy();
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    charts[canvasId] = new Chart(ctx, {
+      type, data,
+      options: Object.assign({
+        responsive: true,
+        scales: type === 'doughnut' ? {} : {
+          x: { grid: { display: false }, ticks: { font: { family: 'IBM Plex Mono', size: 10 } } },
+          y: { grid: { color: '#EEF1F6' }, ticks: { font: { family: 'IBM Plex Mono', size: 10 } } }
+        }
+      }, extraOptions || {})
+    });
+  }
+
+  const baseDocTitle = document.title;
+  let lastKnownUnread = null;
+
+  function playNotificationSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  }
+
+  async function pollChatUnread() {
+    try {
+      const res = await fetch('/api/chat/unread-count');
+      if (!res.ok) return;
+      const data = await res.json();
+      const badge = document.getElementById('chatUnreadBadge');
+      const label = data.unread > 99 ? '99+' : data.unread;
+      if (badge) {
+        badge.style.display = data.unread > 0 ? '' : 'none';
+        badge.textContent = label;
+      }
+      document.title = data.unread > 0 ? `(${label}) ${baseDocTitle}` : baseDocTitle;
+
+      if (lastKnownUnread !== null && data.unread > lastKnownUnread) {
+        playNotificationSound();
+      }
+      lastKnownUnread = data.unread;
+    } catch (e) {}
+  }
+  setInterval(pollChatUnread, 8000);
+  pollChatUnread();
+
+  checkAuth();
+  loadAll();
+</script>
+  <div class="modal-overlay" id="cpContactsModal">
+    <div class="modal-box" style="max-width:700px;">
+      <h3 id="cpContactsTitle">Доп. контакты</h3>
+      <div style="overflow-x:auto;">
+        <table class="emp-table">
+          <thead>
+            <tr>
+              <th style="min-width:150px;">ФИО</th>
+              <th style="min-width:130px;">Должность</th>
+              <th style="min-width:170px;">Телефон</th>
+              <th style="min-width:170px;">Email</th>
+              <th style="min-width:150px;">Комментарий</th>
+              <th style="min-width:110px;"></th>
+            </tr>
+          </thead>
+          <tbody id="cpContactsList"></tbody>
+        </table>
+      </div>
+      <button class="btn secondary" style="margin-top:12px;" onclick="addCpContactRow()">+ Добавить контакт</button>
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="secondary" onclick="closeContactsModal()">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="editTxModal">
+    <div class="modal-box">
+      <h3>Изменить запись</h3>
+      <label>Дата</label>
+      <input type="date" id="editTxDate">
+      <label>Тип</label>
+      <select id="editTxType">
+        <option value="expense">Расход</option>
+        <option value="income">Доход</option>
+      </select>
+      <label>Категория</label>
+      <input type="text" id="editTxCategory">
+      <label>Сумма (₽)</label>
+      <input type="number" id="editTxAmount">
+      <label>Описание</label>
+      <textarea id="editTxDescription" rows="2"></textarea>
+      <label>Статус</label>
+      <select id="editTxStatus">
+        <option>Оплачено</option>
+        <option>Ожидает</option>
+        <option>Просрочено</option>
+      </select>
+      <div class="modal-actions">
+        <button class="secondary" onclick="closeEditTxModal()">Отмена</button>
+        <button class="primary" onclick="saveEditedTransaction()">Сохранить</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

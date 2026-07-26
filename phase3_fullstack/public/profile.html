@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Finance — Мой профиль</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-dark: #0B1220; --navy: #16213E; --blue: #2D6CDF; --blue-light: #EAF1FE;
+    --bg-page: #F3F5F9; --card: #FFFFFF; --text: #12172A;
+    --text-soft: #626B85; --border: #E4E8F0; --green: #1F9254; --green-bg:#E7F5EC; --red: #D33F3F;
+  }
+  html[data-theme="dark"] {
+    --blue-light: #1E2A44; --bg-page: #10141F; --card: #1A2033;
+    --text: #E6E9F2; --text-soft: #9098AC; --border: #2C3348; --green-bg: #163325;
+  }
+  html[data-theme="dark"] h1 { color: var(--text); }
+  html[data-theme="dark"] input, html[data-theme="dark"] select {
+    background: #232A3D; color: var(--text); border-color: var(--border);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg-page); font-family: 'Inter', sans-serif; color: var(--text); }
+  .topbar {
+    background: var(--navy-dark); background-image: linear-gradient(120deg, var(--navy-dark) 55%, var(--navy) 100%);
+    padding: 18px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .brand { font-weight: 800; font-size: 18px; color: #fff; }
+  .brand span { color: var(--blue); }
+  .who { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: rgba(255,255,255,0.6); display: flex; gap: 14px; align-items: center; }
+  .who a { color: rgba(255,255,255,0.8); text-decoration: none; border-bottom: 1px dotted rgba(255,255,255,0.4); cursor: pointer; }
+
+  .wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 60px; display:flex; flex-direction:column; gap:20px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 28px 26px; box-shadow: 0 1px 2px rgba(16,24,64,0.04); }
+  h1 { font-size: 17px; margin: 0 0 20px; color: var(--navy); }
+  label { display: block; font-size: 12.5px; color: var(--text-soft); font-weight: 600; margin-bottom: 6px; margin-top: 14px; }
+  label:first-of-type { margin-top: 0; }
+  input, select {
+    width: 100%; padding: 11px 13px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: 'Inter', sans-serif;
+  }
+  input[disabled] { background: var(--bg-page); color: var(--text-soft); }
+  button {
+    margin-top: 20px; padding: 11px 20px; border: none; border-radius: 8px;
+    background: var(--blue); color: #fff; font-weight: 700; font-size: 14px; cursor: pointer;
+  }
+  .msg { margin-top: 12px; font-size: 13px; min-height: 16px; }
+  .msg.ok { color: var(--green); }
+  .msg.err { color: var(--red); }
+  .role-badge {
+    display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    padding: 3px 10px; border-radius: 20px; background: var(--blue-light); color: var(--blue); margin-left: 8px;
+  }
+  .expired-banner {
+    display: none; background: #FCEAEA; border-left: 4px solid var(--red); border-radius: 0 8px 8px 0;
+    padding: 14px 16px; font-size: 13.5px; color: var(--text);
+  }
+  .pw-field { position: relative; }
+  .pw-field input { padding-right: 84px; }
+  .pw-toggle {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    margin: 0; padding: 6px 12px; font-size: 11.5px; font-weight: 600;
+    background: var(--blue-light); color: var(--blue); border: none; border-radius: 6px; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand" onclick="goHome()" style="cursor:pointer;">AI <span>Finance</span></div>
+    <div class="who">
+      <span id="whoami"></span> ·
+      <a onclick="toggleTheme()" id="themeToggleBtn" style="cursor:pointer;">🌙</a> ·
+      <a onclick="location.href='/colleagues.html'">Пользователи</a> ·
+      <a onclick="location.href='/chat.html'">Чат<span id="chatUnreadBadge" style="display:none; background:var(--red,#D33F3F); color:#fff; border-radius:20px; padding:1px 6px; font-size:10px; margin-left:4px;"></span></a> ·
+      <a id="dashLink" style="display:none;" onclick="location.href='/dashboard.html'">К дашборду</a>
+      <a id="entryLink" style="display:none;" onclick="location.href='/entry.html'">Внести запись</a> ·
+      <a onclick="logout()">Выйти</a>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="expired-banner" id="expiredBanner">
+      ⚠️ Срок действия вашего пароля истёк (30 дней) — смените его ниже, чтобы продолжить пользоваться системой.
+    </div>
+    <div class="card">
+      <h1>Мой профиль <span class="role-badge" id="roleBadge"></span></h1>
+      <form id="profileForm">
+        <label>Логин (изменить нельзя)</label>
+        <input type="text" id="username" disabled>
+
+        <label>ФИО</label>
+        <input type="text" id="fullName" placeholder="Иванов Иван Иванович">
+
+        <label>Email</label>
+        <input type="email" id="email" placeholder="ivan@example.com">
+
+        <label>Телефон</label>
+        <input type="text" id="phone" placeholder="+7 900 000-00-00">
+
+        <label>Telegram — для связи с коллегами (например @ivanov)</label>
+        <input type="text" id="telegramUsername" placeholder="@username">
+
+        <label>Личный Telegram Chat ID — для уведомлений от бота (необязательно)</label>
+        <input type="text" id="telegramChatId" placeholder="узнать: напишите боту @userinfobot">
+
+        <button type="submit">Сохранить профиль</button>
+        <div class="msg" id="profileMsg"></div>
+      </form>
+    </div>
+
+    <div class="card">
+      <h1>Сменить пароль</h1>
+      <form id="passwordForm">
+        <label>Текущий пароль</label>
+        <div class="pw-field">
+          <input type="password" id="currentPassword" required>
+          <button type="button" class="pw-toggle" onclick="togglePassword('currentPassword', this)">Показать</button>
+        </div>
+
+        <label>Новый пароль (минимум 6 символов)</label>
+        <div class="pw-field">
+          <input type="password" id="newPassword" required minlength="6">
+          <button type="button" class="pw-toggle" onclick="togglePassword('newPassword', this)">Показать</button>
+        </div>
+
+        <label>Повторите новый пароль</label>
+        <div class="pw-field">
+          <input type="password" id="confirmPassword" required minlength="6">
+          <button type="button" class="pw-toggle" onclick="togglePassword('confirmPassword', this)">Показать</button>
+        </div>
+
+        <button type="submit">Сменить пароль</button>
+        <div class="msg" id="passwordMsg"></div>
+      </form>
+    </div>
+  </div>
+
+<script>
+  function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Скрыть';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Показать';
+    }
+  }
+
+  async function goHome() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    window.location.href = '/dashboard.html';
+  }
+
+  async function checkAuth() {
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    document.getElementById('whoami').textContent = data.user.username;
+    const roleLabels = { owner: 'Владелец', accountant: 'Главный Бухгалтер', user: 'Обычный пользователь' };
+    document.getElementById('roleBadge').textContent = roleLabels[data.user.role] || data.user.role;
+    document.getElementById('dashLink').style.display = '';
+    document.getElementById('entryLink').style.display = '';
+    if (data.mustChangePassword) {
+      document.getElementById('expiredBanner').style.display = '';
+    }
+  }
+
+  async function logout() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login.html';
+  }
+
+  async function loadProfile() {
+    const res = await fetch('/api/profile');
+    const p = await res.json();
+    document.getElementById('username').value = p.username;
+    document.getElementById('fullName').value = p.full_name || '';
+    document.getElementById('email').value = p.email || '';
+    document.getElementById('phone').value = p.phone || '';
+    document.getElementById('telegramChatId').value = p.telegram_chat_id || '';
+    document.getElementById('telegramUsername').value = p.telegram_username || '';
+  }
+
+  document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msgEl = document.getElementById('profileMsg');
+    msgEl.textContent = ''; msgEl.className = 'msg';
+    try {
+      const res = await fetch('/api/profile', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          full_name: document.getElementById('fullName').value.trim(),
+          email: document.getElementById('email').value.trim(),
+          phone: document.getElementById('phone').value.trim(),
+          telegram_chat_id: document.getElementById('telegramChatId').value.trim(),
+          telegram_username: document.getElementById('telegramUsername').value.trim()
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка сохранения');
+      msgEl.textContent = '✓ Профиль сохранён'; msgEl.className = 'msg ok';
+    } catch (err) {
+      msgEl.textContent = err.message; msgEl.className = 'msg err';
+    }
+  });
+
+  document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const msgEl = document.getElementById('passwordMsg');
+    msgEl.textContent = ''; msgEl.className = 'msg';
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    if (newPassword !== confirmPassword) {
+      msgEl.textContent = 'Новые пароли не совпадают'; msgEl.className = 'msg err'; return;
+    }
+    try {
+      const res = await fetch('/api/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: document.getElementById('currentPassword').value,
+          newPassword
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Ошибка смены пароля');
+      msgEl.textContent = '✓ Пароль изменён'; msgEl.className = 'msg ok';
+      document.getElementById('passwordForm').reset();
+      document.getElementById('expiredBanner').style.display = 'none';
+    } catch (err) {
+      msgEl.textContent = err.message; msgEl.className = 'msg err';
+    }
+  });
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '☀️' : '🌙';
+  }
+  function toggleTheme() {
+    const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    applyTheme(next);
+  }
+  applyTheme(localStorage.getItem('theme') || 'light');
+
+  const baseDocTitle = document.title;
+  let lastKnownUnread = null;
+
+  function playNotificationSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.18, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.35);
+    } catch (e) {}
+  }
+
+  async function pollChatUnread() {
+    try {
+      const res = await fetch('/api/chat/unread-count');
+      if (!res.ok) return;
+      const data = await res.json();
+      const badge = document.getElementById('chatUnreadBadge');
+      const label = data.unread > 99 ? '99+' : data.unread;
+      if (badge) {
+        badge.style.display = data.unread > 0 ? '' : 'none';
+        badge.textContent = label;
+      }
+      document.title = data.unread > 0 ? `(${label}) ${baseDocTitle}` : baseDocTitle;
+
+      if (lastKnownUnread !== null && data.unread > lastKnownUnread) {
+        playNotificationSound();
+      }
+      lastKnownUnread = data.unread;
+    } catch (e) {}
+  }
+  setInterval(pollChatUnread, 8000);
+  pollChatUnread();
+
+  checkAuth();
+  loadProfile();
+</script>
+</body>
+</html>

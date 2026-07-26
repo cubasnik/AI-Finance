@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Finance — Вход</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy-dark: #0B1220; --navy: #16213E; --blue: #2D6CDF;
+    --bg-page: #F3F5F9; --card: #FFFFFF; --text: #12172A;
+    --text-soft: #626B85; --border: #E4E8F0; --red: #D33F3F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    font-family: 'Inter', sans-serif; background: var(--navy-dark);
+    background-image: linear-gradient(120deg, var(--navy-dark) 55%, var(--navy) 100%);
+  }
+  .box {
+    background: var(--card); border-radius: 14px; padding: 40px 36px;
+    width: 100%; max-width: 360px; box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5);
+  }
+  .brand { font-weight: 800; font-size: 20px; color: var(--navy); margin-bottom: 4px; }
+  .brand span { color: var(--blue); }
+  .sub { font-size: 12px; color: var(--text-soft); font-family: 'IBM Plex Mono', monospace; margin-bottom: 28px; }
+  label { display: block; font-size: 12.5px; color: var(--text-soft); font-weight: 500; margin-bottom: 6px; }
+  input {
+    width: 100%; padding: 11px 13px; margin-bottom: 16px; border: 1px solid var(--border);
+    border-radius: 8px; font-size: 14px; font-family: 'Inter', sans-serif;
+  }
+  button {
+    width: 100%; padding: 12px; border: none; border-radius: 8px;
+    background: var(--blue); color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  .error { color: var(--red); font-size: 13px; margin-top: 12px; text-align: center; min-height: 18px; }
+</style>
+</head>
+<body>
+  <form class="box" id="loginForm">
+    <div class="brand">AI <span>Finance</span></div>
+    <div class="sub">вход в систему учёта</div>
+    <label>Логин</label>
+    <input type="text" id="username" autocomplete="username" required>
+    <label>Пароль</label>
+    <div style="position:relative;">
+      <input type="password" id="password" autocomplete="current-password" required style="padding-right:80px;">
+      <button type="button" onclick="togglePw()" style="position:absolute; right:6px; top:50%; transform:translateY(-50%); width:auto; margin:0; padding:6px 12px; font-size:11.5px; font-weight:600; background:var(--blue-light,#EAF1FE); color:var(--blue); border:none; border-radius:6px; cursor:pointer;" id="pwToggleBtn">Показать</button>
+    </div>
+    <button type="submit">Войти</button>
+    <div class="error" id="err"></div>
+    <div style="text-align:center; margin-top:16px;">
+      <a href="/forgot-password.html" style="font-size:12.5px; color:var(--text-soft); text-decoration:none; border-bottom:1px dotted var(--text-soft);">Забыли пароль?</a>
+    </div>
+  </form>
+
+<script>
+  function togglePw() {
+    const input = document.getElementById('password');
+    const btn = document.getElementById('pwToggleBtn');
+    if (input.type === 'password') { input.type = 'text'; btn.textContent = 'Скрыть'; }
+    else { input.type = 'password'; btn.textContent = 'Показать'; }
+  }
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const errEl = document.getElementById('err');
+    errEl.textContent = '';
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (!res.ok) { errEl.textContent = data.error || 'Ошибка входа'; return; }
+      window.location.href = '/dashboard.html';
+    } catch (err) {
+      errEl.textContent = 'Не удалось связаться с сервером';
+    }
+  });
+</script>
+</body>
+</html>

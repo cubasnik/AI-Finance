@@ -1,0 +1,40 @@
+# Окружение
+.env
+.env.local
+.env.*.local
+
+# Node modules
+node_modules/
+package-lock.json
+npm-debug.log
+
+# SQLite базы данных (локальные)
+*.db
+*.db-shm
+*.db-wal
+finance.db
+finance.db-shm
+finance.db-wal
+
+# Загруженные файлы
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Логи
+*.log
+logs/
+
+# Build
+dist/
+build/

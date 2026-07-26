@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head><meta charset="UTF-8"><title>AI Finance</title></head>
+<body>
+<script>
+  fetch('/api/me').then(r => r.json()).then(data => {
+    if (!data.user) { window.location.href = '/login.html'; return; }
+    window.location.href = '/dashboard.html';
+  });
+</script>
+</body>
+</html>
